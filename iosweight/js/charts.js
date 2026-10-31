@@ -219,50 +219,31 @@ export class SixChart {
 
     for (const slot of this.visible) {
       const color = SLOT_COLORS[slot];
-      const pts = entries
-        .map((e, i) => ({ x: geom.xFor(i), y: e.slots[slot] == null ? null : geom.yFor(e.slots[slot]) }))
-        .filter((p) => p.y != null);
+      const pts = [];
+      for (let i = 0; i < entries.length; i++) {
+        if (entries[i].slots[slot] == null) continue;
+        pts.push({ x: geom.xFor(i), y: geom.yFor(entries[i].slots[slot]) });
+      }
       if (!pts.length) continue;
+
+      if (pts.length === 1) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(pts[0].x, pts[0].y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        continue;
+      }
 
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-
-      let started = false;
-      let prevIndex = -2;
-      for (let i = 0; i < entries.length; i++) {
-        const value = entries[i].slots[slot];
-        if (value == null) {
-          started = false;
-          continue;
-        }
-        const x = geom.xFor(i);
-        const y = geom.yFor(value);
-        if (!started || prevIndex !== i - 1) {
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          started = true;
-        } else {
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-        prevIndex = i;
-      }
-      if (started && prevIndex === entries.length - 1) {
-        ctx.stroke();
-      }
-
-      ctx.fillStyle = color;
-      for (let i = 0; i < entries.length; i++) {
-        if (entries[i].slots[slot] == null) continue;
-        const x = geom.xFor(i);
-        const y = geom.yFor(entries[i].slots[slot]);
-        ctx.beginPath();
-        ctx.arc(x, y, 2.1, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.beginPath();
+      smoothPath(ctx, pts);
+      ctx.stroke();
       ctx.restore();
     }
 
@@ -401,6 +382,15 @@ export class DailyChart {
 
     const pts = entries.map((e, i) => ({ x: geom.xFor(i), y: geom.yFor(e.avg) }));
 
+    if (pts.length === 1) {
+      ctx.save();
+      ctx.fillStyle = '#46E0A8';
+      ctx.beginPath();
+      ctx.arc(pts[0].x, pts[0].y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.beginPath();
     smoothPath(ctx, pts);
@@ -440,15 +430,6 @@ export class DailyChart {
       ctx.restore();
     }
 
-    ctx.save();
-    ctx.fillStyle = '#46E0A8';
-    for (const p of pts) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-
     if (this.selected >= 0 && this.selected < entries.length) {
       const x = geom.xFor(this.selected);
       ctx.save();
@@ -457,16 +438,6 @@ export class DailyChart {
       ctx.beginPath();
       ctx.moveTo(x, top);
       ctx.lineTo(x, bottom);
-      ctx.stroke();
-      ctx.restore();
-      const p = pts[this.selected];
-      ctx.save();
-      ctx.fillStyle = '#0A0E13';
-      ctx.strokeStyle = '#46E0A8';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 4.2, 0, Math.PI * 2);
-      ctx.fill();
       ctx.stroke();
       ctx.restore();
     }
