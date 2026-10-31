@@ -1,6 +1,6 @@
 import {
   SLOTS, SLOT_COLORS, SLOT_COUNT, clamp, fmtDateCN, fmtKg, fmtMD, fmtFullCN, weekdayCN,
-} from './storage.js';
+} from './storage.js?v=1.4';
 
 const FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif';
 

@@ -1,12 +1,12 @@
 import {
   SLOTS, SLOT_COLORS, SLOT_COUNT, addDays, addMonths, diffDays, fmtDateCN, fmtDelta, fmtFullCN, fmtKg,
   fmtMD, monthLabel, monthOf, prefs, store, todayISO, weekdayCN,
-} from './storage.js';
+} from './storage.js?v=1.4';
 import {
   bmi, buildInsights, completion, dailyEntries, goal, intradayRange, latestEntry, mealDeltas,
   previousEntry, rangeEntries, regression, slotAverages, streak, summary, totalChange,
   volatility, weekAverage, weekBars, weekChange,
-} from './stats.js';
+} from './stats.js?v=1.4';
 import {
   DailyChart, SixChart, drawSparkline, drawWeeklyBars, renderHeatmap, renderSlotAverages,
 } from './charts.js?v=1.4';
