@@ -1,14 +1,14 @@
-const CACHE = 'weightdiary-v1.2.0';
+const CACHE = 'weightdiary-v1.2.1';
 
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
-  './js/app.js',
+  './js/app.js?v=1.2.1',
   './js/storage.js',
   './js/stats.js',
-  './js/charts.js',
+  './js/charts.js?v=1.2.1',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
@@ -51,15 +51,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((hit) => {
-      if (hit) return hit;
-      return fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
         }
         return response;
-      });
-    }),
+      })
+      .catch(() => caches.match(request)),
   );
 });

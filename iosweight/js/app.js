@@ -9,7 +9,7 @@ import {
 } from './stats.js';
 import {
   DailyChart, SixChart, drawSparkline, drawWeeklyBars, renderHeatmap, renderSlotAverages,
-} from './charts.js';
+} from './charts.js?v=1.2.1';
 
 const $ = (id) => document.getElementById(id);
 

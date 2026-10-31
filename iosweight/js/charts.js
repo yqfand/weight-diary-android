@@ -226,11 +226,9 @@ export class SixChart {
 
       ctx.save();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 5;
 
       let started = false;
       let prevIndex = -2;
@@ -256,7 +254,6 @@ export class SixChart {
         ctx.stroke();
       }
 
-      ctx.shadowBlur = 0;
       ctx.fillStyle = color;
       for (let i = 0; i < entries.length; i++) {
         if (entries[i].slots[slot] == null) continue;
@@ -422,8 +419,6 @@ export class DailyChart {
     ctx.lineWidth = 2.2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.shadowColor = 'rgba(70,224,168,0.55)';
-    ctx.shadowBlur = 8;
     ctx.beginPath();
     smoothPath(ctx, pts);
     ctx.stroke();
