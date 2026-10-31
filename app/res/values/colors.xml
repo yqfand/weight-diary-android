@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mint">#46E0A8</color>
+    <color name="mint_bright">#5CF2B8</color>
+    <color name="mint_deep">#2FCB9A</color>
+    <color name="violet">#8A7BFF</color>
+    <color name="coral">#FF8B7A</color>
+    <color name="warn">#FFC46B</color>
+    <color name="text_primary">#F2F7F9</color>
+    <color name="text_secondary">#9EAEB8</color>
+    <color name="text_tertiary">#71818B</color>
+    <color name="card">#12FFFFFF</color>
+    <color name="stroke">#26FFFFFF</color>
+    <color name="bg">#0B1114</color>
+    <color name="sheet_bg">#F2141C24</color>
+    <color name="transparent">#00000000</color>
+    <color name="ink">#081114</color>
+    <color name="slot0">#46E0A8</color>
+    <color name="slot1">#7EE8C4</color>
+    <color name="slot2">#8A7BFF</color>
+    <color name="slot3">#B7A8FF</color>
+    <color name="slot4">#FF8B7A</color>
+    <color name="slot5">#FFB3A3</color>
+</resources>

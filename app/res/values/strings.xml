@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">体重日记</string>
+    <string name="today">今日</string>
+    <string name="trend">趋势</string>
+    <string name="analysis">分析</string>
+    <string name="history">记录</string>
+    <string name="settings">设置</string>
+    <string name="kg">kg</string>
+</resources>

@@ -1,0 +1,19 @@
+# 构建工具与本地缓存
+.build/
+.gradle/
+local.properties
+
+# 生成的安装包与签名文件
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 系统
+.DS_Store
+Thumbs.db
