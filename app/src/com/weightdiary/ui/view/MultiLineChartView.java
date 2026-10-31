@@ -282,45 +282,31 @@ public class MultiLineChartView extends View {
                 ys[i] = Double.isNaN(v) ? Float.NaN
                         : plot.top + (float) ((max - v) / span * plot.height());
             }
-            Path series = new Path();
-            int start = -1;
+            float[] px = new float[n];
+            float[] py = new float[n];
+            int count = 0;
             for (int i = 0; i < n; i++) {
-                boolean ok = !Float.isNaN(ys[i]) && xs[i] <= revealX;
-                if (ok && start < 0) {
-                    start = i;
-                }
-                if ((!ok || i == n - 1) && start >= 0) {
-                    int end = ok ? i : i - 1;
-                    appendSegment(series, xs, ys, start, end);
-                    start = -1;
+                if (!Float.isNaN(ys[i]) && xs[i] <= revealX) {
+                    px[count] = xs[i];
+                    py[count] = ys[i];
+                    count++;
                 }
             }
+
             linePaint.setColor(Slots.color(getContext(), s));
             linePaint.setAlpha(230);
-            canvas.drawPath(series, linePaint);
-
-            float spacing = n > 1 ? plot.width() / (n - 1f) : plot.width();
-            if (spacing >= dp(5f)) {
+            if (count >= 2) {
+                float[] tx = new float[count];
+                float[] ty = new float[count];
+                System.arraycopy(px, 0, tx, 0, count);
+                System.arraycopy(py, 0, ty, 0, count);
+                Path series = new Path();
+                ChartUtils.smoothPath(series, tx, ty);
+                canvas.drawPath(series, linePaint);
+            } else if (count == 1) {
                 dotPaint.setColor(Slots.color(getContext(), s));
                 dotPaint.setAlpha(230);
-                for (int i = 0; i < n; i++) {
-                    if (!Float.isNaN(ys[i]) && xs[i] <= revealX) {
-                        canvas.drawCircle(xs[i], ys[i], dp(1.7f), dotPaint);
-                    }
-                }
-            }
-
-            // 最近一次强调
-            for (int i = n - 1; i >= 0; i--) {
-                if (!Double.isNaN(values[s][i])) {
-                    if (xs[i] <= revealX && reveal > 0.5f) {
-                        float y = plot.top + (float) ((max - values[s][i]) / span * plot.height());
-                        dotPaint.setColor(Slots.color(getContext(), s));
-                        dotPaint.setAlpha(255);
-                        canvas.drawCircle(xs[i], y, dp(3.2f), dotPaint);
-                    }
-                    break;
-                }
+                canvas.drawCircle(px[0], py[0], dp(2f), dotPaint);
             }
         }
 
@@ -329,24 +315,6 @@ public class MultiLineChartView extends View {
         if (touched >= 0 && touched < n) {
             drawTooltip(canvas, touched, min, max, span);
         }
-    }
-
-    private void appendSegment(Path series, float[] xs, float[] ys, int start, int end) {
-        if (end < start) {
-            return;
-        }
-        int len = end - start + 1;
-        if (len < 2) {
-            series.moveTo(xs[start], ys[start]);
-            return;
-        }
-        float[] sx = new float[len];
-        float[] sy = new float[len];
-        System.arraycopy(xs, start, sx, 0, len);
-        System.arraycopy(ys, start, sy, 0, len);
-        Path sub = new Path();
-        ChartUtils.smoothPath(sub, sx, sy);
-        series.addPath(sub);
     }
 
     private void drawGrid(Canvas canvas, double min, double max) {

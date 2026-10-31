@@ -253,20 +253,10 @@ public class LineChartView extends View {
             if (n >= 5) {
                 canvas.drawPath(maPath, maPaint);
             }
+        } else if (n == 1) {
+            canvas.drawCircle(xs[0], ys[0], dp(3f), dotPaint);
         }
 
-        float spacing = n > 1 ? (xs[n - 1] - xs[0]) / (n - 1) : plot.width();
-        if (spacing > dp(6f) || n <= 1) {
-            for (int i = 0; i < n; i++) {
-                if (xs[i] > revealX) {
-                    continue;
-                }
-                canvas.drawCircle(xs[i], ys[i], dp(2.2f), dotPaint);
-            }
-        }
-
-        drawMinMaxMarks(canvas, n);
-        drawLatest(canvas, n);
         canvas.restore();
 
         drawXLabels(canvas, n);
@@ -295,34 +285,6 @@ public class LineChartView extends View {
         labelPaint.setColor(getContext().getColor(R.color.text_tertiary));
     }
 
-    private void drawMinMaxMarks(Canvas canvas, int n) {
-        if (n < 3) {
-            return;
-        }
-        int minIdx = 0;
-        int maxIdx = 0;
-        for (int i = 1; i < n; i++) {
-            if (data.get(i).weight < data.get(minIdx).weight) {
-                minIdx = i;
-            }
-            if (data.get(i).weight > data.get(maxIdx).weight) {
-                maxIdx = i;
-            }
-        }
-        canvas.drawCircle(xs[minIdx], ys[minIdx], dp(3.6f), ringPaint);
-        canvas.drawCircle(xs[maxIdx], ys[maxIdx], dp(3.6f), ringPaint);
-    }
-
-    private void drawLatest(Canvas canvas, int n) {
-        int i = n - 1;
-        float x = xs[i];
-        float y = ys[i];
-        dotPaint.setAlpha(64);
-        canvas.drawCircle(x, y, dp(9f), dotPaint);
-        dotPaint.setAlpha(255);
-        canvas.drawCircle(x, y, dp(3.4f), dotPaint);
-    }
-
     private void drawXLabels(Canvas canvas, int n) {
         if (n < 2) {
             return;
@@ -344,7 +306,6 @@ public class LineChartView extends View {
         float y = ys[index];
 
         canvas.drawLine(x, plot.top, x, plot.bottom, guidePaint);
-        canvas.drawCircle(x, y, dp(5f), dotPaint);
 
         String text = Fmt.md(data.get(index).date) + "  " + Fmt.kg(data.get(index).weight) + " kg";
         float textWidth = tipTextPaint.measureText(text);

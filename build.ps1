@@ -88,7 +88,7 @@ if ($LASTEXITCODE -ne 0) { throw 'apksigner verify failed' }
 
 & $aapt2 dump badging (Join-Path $out 'app-release.apk') | Select-Object -First 6
 
-$finalName = if ($Debuggable) { 'WeightDiary-test.apk' } else { 'WeightDiary-v1.2.apk' }
+$finalName = if ($Debuggable) { 'WeightDiary-test.apk' } else { 'WeightDiary-v1.3.apk' }
 $final = Join-Path $root $finalName
 Copy-Item (Join-Path $out 'app-release.apk') $final -Force
 Write-Host ''

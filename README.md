@@ -172,7 +172,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 2. `javac`（`-source 1.8`，`bootclasspath` 指向 `android.jar` + lambda stubs）
 3. `d8 --min-api 26` 生成 `classes.dex`
 4. 将 dex 写入 APK → `zipalign` → `apksigner` 签名
-5. 输出：`WeightDiary-v1.2.apk`
+5. 输出：`WeightDiary-v1.3.apk`
 
 > 首次构建会在 `.build/debug.keystore` 自动生成调试签名（口令 `android`）。如需发布，请替换为自己的正式签名，并同步调整 `versionCode` / `versionName`（位于 `app/AndroidManifest.xml`）。
 
@@ -234,6 +234,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 ## 版本记录
 
+- **v1.3**：趋势曲线改用 Catmull-Rom 平滑连续曲线，移除逐记录圆点与最近点/极值标记，六条线统一线宽；网页版同步
 - **v1.2 网页版**：新增 `iosweight/` PWA，可在 iPhone 主屏幕安装、离线使用，并部署到 GitHub Pages
 - **v1.2**：录入弹窗支持选择“第几次”；主按钮按上次记录智能建议下一时段；各时段独立修改/删除
 - **v1.1**：升级为每日六次记录；新增六时段平行折线、日均曲线、时段均值、日内极差、记录完整度、餐前餐后差值
