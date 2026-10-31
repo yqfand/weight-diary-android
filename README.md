@@ -6,6 +6,15 @@
 - 所有图表均为 Canvas 自绘
 - 数据只保存在本机，不联网、不需要任何权限
 - `minSdk 26`（Android 8.0+），`targetSdk 35`
+- 另提供 **网页版（PWA）**，可直接在 iPhone 上使用
+
+## 网页版（iPhone / PWA）
+
+- 地址：**https://yqfand.github.io/weight-diary-android/iosweight/**
+- iPhone 使用：Safari 打开上面的地址 → 分享 → **添加到主屏幕**，即可像 App 一样全屏使用，支持离线
+- 功能与安卓版一致：每日六次、时段选择、日均趋势、六时段平行折线、分析、JSON 备份
+- 数据保存在浏览器本地（localStorage），与安卓版共用同一 JSON 格式，可互相导入
+- 源码位于 `iosweight/`；GitHub Pages 从 `main` 分支根目录发布，仓库根 `index.html` 会自动跳转到网页版
 
 ---
 
@@ -191,6 +200,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 │       └── ui/                       # Activity、四个页面、录入弹窗、通用 UI
 │           └── view/                 # 全部自绘图表组件
 ├── build.ps1                         # aapt2 + javac + d8 + apksigner 构建脚本
+├── iosweight/                        # 网页版 / PWA（iPhone 可用）
+│   ├── index.html
+│   ├── styles.css
+│   ├── manifest.webmanifest
+│   ├── sw.js                         # 离线缓存
+│   ├── icons/                        # PWA 图标
+│   └── js/                           # app / charts / stats / storage
+├── index.html                        # 网页版入口跳转
 ├── .gitignore
 └── README.md
 ```
@@ -217,6 +234,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 ## 版本记录
 
+- **v1.2 网页版**：新增 `iosweight/` PWA，可在 iPhone 主屏幕安装、离线使用，并部署到 GitHub Pages
 - **v1.2**：录入弹窗支持选择“第几次”；主按钮按上次记录智能建议下一时段；各时段独立修改/删除
 - **v1.1**：升级为每日六次记录；新增六时段平行折线、日均曲线、时段均值、日内极差、记录完整度、餐前餐后差值
 - **v1.0**：每日单条记录；趋势曲线、周变化、月度热力图、目标预测与备份

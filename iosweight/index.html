@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>体重日记</title>
+  <meta name="description" content="每日六次体重记录，日均趋势、六时段平行可视化与数据分析。数据仅保存在本机。">
+  <meta name="theme-color" content="#0A0E13">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="体重日记">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+
+  <div class="app">
+    <header class="app-header">
+      <div>
+        <div class="eyebrow" id="headerDate">—</div>
+        <h1 id="headerTitle">体重日记</h1>
+      </div>
+      <button class="icon-btn" id="btnSettings" aria-label="设置" type="button">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3.2"></circle>
+          <path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9"></path>
+        </svg>
+      </button>
+    </header>
+
+    <main>
+      <!-- 今日 -->
+      <section class="page active" id="page-today">
+        <div class="card hero">
+          <div class="hero-main">
+            <div class="label" id="heroLabel">今日日均</div>
+            <div class="hero-value"><span id="heroValue">—</span><span class="unit">kg</span></div>
+            <div class="hero-meta">
+              <span class="pill" id="heroDelta">—</span>
+              <span class="pill" id="heroCount">0 / 6</span>
+            </div>
+            <div class="hero-target" id="heroTarget">未设置目标</div>
+          </div>
+          <div class="ring" id="goalRing">
+            <div class="ring-inner">
+              <b id="ringPct">—</b>
+              <small>目标进度</small>
+            </div>
+          </div>
+        </div>
+
+        <button class="primary record-btn" id="btnRecord" type="button">记录 · 早餐前</button>
+
+        <div class="section-head">
+          <h2>今日六次</h2>
+          <span>点方格可补记</span>
+        </div>
+        <div class="slot-grid" id="slotGrid"></div>
+
+        <div class="stat-row" id="todayStats"></div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>近 7 天日均</h3>
+            <span id="sparkLast">—</span>
+          </div>
+          <div class="spark" id="sparkChart"></div>
+          <div class="spark-labels" id="sparkLabels"></div>
+        </div>
+
+        <div class="card insight-card" id="todayInsight"></div>
+      </section>
+
+      <!-- 趋势 -->
+      <section class="page" id="page-trend">
+        <div class="page-head">
+          <h2>趋势</h2>
+          <span id="trendWindow">近 30 天</span>
+        </div>
+        <div class="chips" id="rangeChips">
+          <button class="chip" data-range="7" type="button">近 7 天</button>
+          <button class="chip" data-range="30" type="button">近 30 天</button>
+          <button class="chip" data-range="90" type="button">近 90 天</button>
+          <button class="chip" data-range="all" type="button">全部</button>
+        </div>
+        <div class="segmented" id="modeSwitch">
+          <button data-mode="six" type="button">六次对比</button>
+          <button data-mode="daily" type="button">日均曲线</button>
+        </div>
+        <div class="legend" id="sixLegend"></div>
+        <div class="card chart-card">
+          <div class="chart-wrap">
+            <canvas id="trendCanvas" height="240"></canvas>
+            <div class="chart-tooltip hidden" id="trendTooltip"></div>
+            <div class="chart-empty hidden" id="trendEmpty">还没有数据，先记录一次吧</div>
+          </div>
+          <div class="chart-hint">轻触图表查看当天数据</div>
+        </div>
+        <div class="stat-row" id="trendStats"></div>
+        <div class="card">
+          <div class="card-head">
+            <h3>每周日均变化</h3>
+            <span>近 8 周</span>
+          </div>
+          <div class="chart-wrap short">
+            <canvas id="weeklyCanvas" height="180"></canvas>
+            <div class="chart-empty hidden" id="weeklyEmpty">数据还不足以形成周对比</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 分析 -->
+      <section class="page" id="page-analysis">
+        <div class="page-head">
+          <h2>分析</h2>
+          <span>近 30 天</span>
+        </div>
+        <div class="metric-grid" id="metricGrid"></div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>时段均值</h3>
+            <span>近 30 天</span>
+          </div>
+          <div class="slot-avg" id="slotAvg"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>月度热力图</h3>
+            <div class="month-nav">
+              <button id="heatPrev" type="button" aria-label="上个月">‹</button>
+              <span id="heatMonth">—</span>
+              <button id="heatNext" type="button" aria-label="下个月">›</button>
+            </div>
+          </div>
+          <div id="heatmap"></div>
+          <div class="heat-legend">
+            <span>轻</span>
+            <div class="heat-scale"></div>
+            <span>重</span>
+            <em>亮度 = 当天完成度</em>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>智能建议</h3>
+            <span>基于当前数据</span>
+          </div>
+          <div class="insights" id="insights"></div>
+        </div>
+      </section>
+
+      <!-- 记录 -->
+      <section class="page" id="page-history">
+        <div class="page-head">
+          <h2>记录</h2>
+          <span id="historySummary">—</span>
+        </div>
+        <div class="month-nav wide">
+          <button id="histPrev" type="button" aria-label="上个月">‹</button>
+          <span id="histMonth">—</span>
+          <button id="histNext" type="button" aria-label="下个月">›</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+
+      <!-- 设置 -->
+      <section class="page" id="page-settings">
+        <div class="page-head">
+          <h2>设置</h2>
+          <span>v1.2 · 网页版</span>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>个人信息</h3></div>
+          <label class="field">
+            <span>身高（cm）</span>
+            <input id="heightInput" inputmode="numeric" autocomplete="off" placeholder="如 172">
+          </label>
+          <label class="field">
+            <span>目标体重（kg）</span>
+            <input id="targetInput" inputmode="decimal" autocomplete="off" placeholder="如 70.0">
+          </label>
+          <div class="field-hint">身高用于 BMI；目标体重用于进度环与预计达成日期。留空即不启用。</div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3>数据</h3>
+            <span id="storageInfo">—</span>
+          </div>
+          <button class="ghost wide" id="btnExport" type="button">导出备份（JSON）</button>
+          <button class="ghost wide" id="btnImport" type="button">导入备份</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+          <button class="ghost wide danger" id="btnClear" type="button">清空全部记录</button>
+        </div>
+        <div class="card about">
+          <h3>关于</h3>
+          <p>每日最多六次记录（三餐前后），第 1 次为早餐前。所有数据仅保存在本机浏览器，不上传服务器。</p>
+          <p>与安卓版使用同一 JSON 格式，可在两端互相导入备份。</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-page="today" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <rect x="3.5" y="4.5" width="17" height="16" rx="4"></rect>
+        <path d="M3.5 9.5h17M8 3v3M16 3v3"></path>
+      </svg>
+      <span>今日</span>
+    </button>
+    <button class="tab" data-page="trend" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 17.5 8 12l4 3.5 8-9"></path>
+        <path d="M16 6.5h4v4"></path>
+      </svg>
+      <span>趋势</span>
+    </button>
+    <button class="tab" data-page="analysis" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>
+      </svg>
+      <span>分析</span>
+    </button>
+    <button class="tab" data-page="history" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M4 6.5h16M4 12h16M4 17.5h10"></path>
+      </svg>
+      <span>记录</span>
+    </button>
+  </nav>
+
+  <div class="overlay hidden" id="modalOverlay">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <div>
+          <div class="sheet-title" id="modalTitle">记录</div>
+          <div class="sheet-sub" id="modalSub">—</div>
+        </div>
+        <button class="icon-btn" id="modalClose" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div class="slot-label">记录第几次（1 为早餐前）</div>
+      <div class="slot-picker" id="modalSlots"></div>
+      <div class="prev-hint hidden" id="modalPrev"></div>
+      <div class="quick-row">
+        <button class="chip" id="fillYesterday" type="button">沿用昨日</button>
+        <button class="chip" id="fillLast" type="button">沿用上次</button>
+      </div>
+      <div class="weight-row">
+        <button class="step" id="stepDown" type="button" aria-label="减 0.1">−</button>
+        <input id="weightInput" inputmode="decimal" autocomplete="off" placeholder="0.0" maxlength="6">
+        <button class="step" id="stepUp" type="button" aria-label="加 0.1">+</button>
+      </div>
+      <div class="unit-hint">单位 kg · 建议每天在相同状态下测量</div>
+      <div class="sheet-actions">
+        <button class="ghost danger hidden" id="btnDelete" type="button">删除</button>
+        <button class="ghost" id="btnCancel" type="button">取消</button>
+        <button class="primary" id="btnSave" type="button">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <div class="ios-hint hidden" id="iosHint">
+    <div>
+      <b>安装到主屏幕</b>
+      <span>在 Safari 点「分享」→「添加到主屏幕」，即可像 App 一样全屏使用。</span>
+    </div>
+    <button id="iosHintClose" type="button" aria-label="知道了">×</button>
+  </div>
+
+  <noscript>需要启用 JavaScript 才能使用体重日记。</noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
