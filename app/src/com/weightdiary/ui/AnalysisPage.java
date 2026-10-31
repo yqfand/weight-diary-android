@@ -92,7 +92,7 @@ public class AnalysisPage extends Page {
 
         tvAnaSub.setText(st.hasData
                 ? "基于 " + st.recordCount + " 条记录 · " + st.dayCount + " 天 · 近 30 天窗口"
-                : "还没有记录 · 每日六次记录后自动生成分析");
+                : "还没有记录 · 每日七次记录后自动生成分析");
 
         if (Double.isNaN(st.weekDelta)) {
             tvAnaWeek.setText("—");
@@ -169,9 +169,10 @@ public class AnalysisPage extends Page {
             tvAnaRangeSub.setText(sub);
         }
 
-        tvAnaComplete.setText(st.recordsLast7 + " / 42");
-        tvAnaComplete.setTextColor(st.recordsLast7 >= 42 ? mint : primary);
-        tvAnaCompleteSub.setText("近 7 天 · 今日 " + st.todayCount + " / 6");
+        int weekTotal = 7 * Slots.COUNT;
+        tvAnaComplete.setText(st.recordsLast7 + " / " + weekTotal);
+        tvAnaComplete.setTextColor(st.recordsLast7 >= weekTotal ? mint : primary);
+        tvAnaCompleteSub.setText("近 7 天 · 今日 " + st.todayCount + " / " + Slots.COUNT);
 
         if (st.heightCm <= 0) {
             tvAnaBmi.setText("未设置");

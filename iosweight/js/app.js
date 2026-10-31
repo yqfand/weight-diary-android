@@ -1,5 +1,5 @@
 import {
-  SLOTS, SLOT_COLORS, addDays, addMonths, diffDays, fmtDateCN, fmtDelta, fmtFullCN, fmtKg,
+  SLOTS, SLOT_COLORS, SLOT_COUNT, addDays, addMonths, diffDays, fmtDateCN, fmtDelta, fmtFullCN, fmtKg,
   fmtMD, monthLabel, monthOf, prefs, store, todayISO, weekdayCN,
 } from './storage.js';
 import {
@@ -9,7 +9,7 @@ import {
 } from './stats.js';
 import {
   DailyChart, SixChart, drawSparkline, drawWeeklyBars, renderHeatmap, renderSlotAverages,
-} from './charts.js?v=1.2.2';
+} from './charts.js?v=1.4';
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,7 +26,7 @@ const state = {
   lastTab: 'today',
   trendRange: 30,
   trendMode: 'six',
-  visibleSlots: new Set([0, 1, 2, 3, 4, 5]),
+  visibleSlots: new Set([0, 1, 2, 3, 4, 5, 6]),
   month: monthOf(todayISO()),
   heatMonth: monthOf(todayISO()),
   openDates: new Set(),
@@ -115,8 +115,8 @@ function nextSlotFor(date) {
   if (!recs.length) return 0;
   const filled = new Set(recs.map((r) => r.slot));
   const last = Math.max(...recs.map((r) => r.slot));
-  for (let i = last + 1; i < 6; i++) if (!filled.has(i)) return i;
-  for (let i = 0; i < 6; i++) if (!filled.has(i)) return i;
+  for (let i = last + 1; i < SLOT_COUNT; i++) if (!filled.has(i)) return i;
+  for (let i = 0; i < SLOT_COUNT; i++) if (!filled.has(i)) return i;
   return -1;
 }
 
@@ -129,7 +129,7 @@ function renderToday() {
 
   $('heroLabel').textContent = todayEntry ? '今日日均' : (display ? `上次日均 · ${fmtMD(display.date)}` : '今日日均');
   $('heroValue').textContent = display ? fmtKg(display.avg) : '—';
-  $('heroCount').textContent = `${todayEntry ? todayEntry.count : 0} / 6`;
+  $('heroCount').textContent = `${todayEntry ? todayEntry.count : 0} / ${SLOT_COUNT}`;
 
   if (display) {
     const prev = previousEntry(entries, display.date);
@@ -167,12 +167,12 @@ function renderToday() {
 
   const next = nextSlotFor(today);
   const btn = $('btnRecord');
-  btn.textContent = next >= 0 ? `记录 · ${SLOTS[next]}` : '今日已完成 · 6 / 6';
+  btn.textContent = next >= 0 ? `记录 · ${SLOTS[next]}` : `今日已完成 · ${SLOT_COUNT} / ${SLOT_COUNT}`;
   btn.classList.toggle('done', next < 0);
 
   const grid = $('slotGrid');
   grid.innerHTML = '';
-  for (let slot = 0; slot < 6; slot++) {
+  for (let slot = 0; slot < SLOT_COUNT; slot++) {
     const rec = store.get(today, slot);
     const btnEl = document.createElement('button');
     btnEl.type = 'button';
@@ -630,7 +630,7 @@ function bindEvents() {
   $('btnRecord').addEventListener('click', () => {
     const next = nextSlotFor(todayISO());
     if (next >= 0) openModal(todayISO(), next);
-    else toast('今日六次已全部记录，点击方格可修改');
+    else toast('今日七次已全部记录，点击方格可修改');
   });
 
   $('rangeChips').addEventListener('click', (e) => {

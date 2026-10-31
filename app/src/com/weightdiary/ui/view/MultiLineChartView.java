@@ -29,7 +29,7 @@ import java.util.List;
 public class MultiLineChartView extends View {
 
     private final List<Record> data = new ArrayList<>();
-    private final boolean[] visible = {true, true, true, true, true, true};
+    private final boolean[] visible = {true, true, true, true, true, true, true};
     private boolean showAverage = true;
 
     private LocalDate from = LocalDate.now();

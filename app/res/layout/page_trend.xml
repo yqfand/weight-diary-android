@@ -112,7 +112,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center"
-                android:text="六次对比"
+                android:text="七次对比"
                 android:textColor="@color/mint"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -154,7 +154,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="六次对比"
+                    android:text="七次对比"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />

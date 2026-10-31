@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import com.weightdiary.R;
+import com.weightdiary.core.Slots;
 import com.weightdiary.model.Record;
 
 import java.time.LocalDate;
@@ -131,7 +132,7 @@ public class HeatmapView extends View {
                 double avg = arr[0] / arr[1];
                 int count = (int) arr[1];
                 float t = (max - min) < 0.01 ? 0.5f : (float) ((avg - min) / (max - min));
-                int alpha = 0x60 + (int) ((0xAA - 0x60) * (count / 6.0f));
+                int alpha = 0x60 + (int) ((0xAA - 0x60) * (count / (float) Slots.COUNT));
                 int color = weightColor(t, alpha);
                 cellPaint.setColor(color);
                 canvas.drawRoundRect(cell, dp(7f), dp(7f), cellPaint);

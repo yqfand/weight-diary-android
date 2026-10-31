@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>体重日记</title>
-  <meta name="description" content="每日六次体重记录，日均趋势、六时段平行可视化与数据分析。数据仅保存在本机。">
+  <meta name="description" content="每日七次体重记录，日均趋势、七个时段平行可视化与数据分析。数据仅保存在本机。">
   <meta name="theme-color" content="#0A0E13">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -40,7 +40,7 @@
             <div class="hero-value"><span id="heroValue">—</span><span class="unit">kg</span></div>
             <div class="hero-meta">
               <span class="pill" id="heroDelta">—</span>
-              <span class="pill" id="heroCount">0 / 6</span>
+              <span class="pill" id="heroCount">0 / 7</span>
             </div>
             <div class="hero-target" id="heroTarget">未设置目标</div>
           </div>
@@ -55,7 +55,7 @@
         <button class="primary record-btn" id="btnRecord" type="button">记录 · 早餐前</button>
 
         <div class="section-head">
-          <h2>今日六次</h2>
+          <h2>今日七次</h2>
           <span>点方格可补记</span>
         </div>
         <div class="slot-grid" id="slotGrid"></div>
@@ -87,7 +87,7 @@
           <button class="chip" data-range="all" type="button">全部</button>
         </div>
         <div class="segmented" id="modeSwitch">
-          <button data-mode="six" type="button">六次对比</button>
+          <button data-mode="six" type="button">七次对比</button>
           <button data-mode="daily" type="button">日均曲线</button>
         </div>
         <div class="legend" id="sixLegend"></div>
@@ -173,7 +173,7 @@
       <section class="page" id="page-settings">
         <div class="page-head">
           <h2>设置</h2>
-          <span>v1.2 · 网页版</span>
+          <span>v1.4 · 网页版</span>
         </div>
         <div class="card">
           <div class="card-head"><h3>个人信息</h3></div>
@@ -199,7 +199,7 @@
         </div>
         <div class="card about">
           <h3>关于</h3>
-          <p>每日最多六次记录（三餐前后），第 1 次为早餐前。所有数据仅保存在本机浏览器，不上传服务器。</p>
+          <p>每日最多七次记录（三餐前后 + 睡前），第 1 次为早餐前。所有数据仅保存在本机浏览器，不上传服务器。</p>
           <p>与安卓版使用同一 JSON 格式，可在两端互相导入备份。</p>
         </div>
       </section>
@@ -277,6 +277,6 @@
   </div>
 
   <noscript>需要启用 JavaScript 才能使用体重日记。</noscript>
-  <script type="module" src="js/app.js?v=1.2.2"></script>
+  <script type="module" src="js/app.js?v=1.4"></script>
 </body>
 </html>

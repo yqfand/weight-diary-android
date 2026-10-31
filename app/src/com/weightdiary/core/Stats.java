@@ -309,7 +309,7 @@ public final class Stats {
         }
         this.recordsLast30 = rec30;
         this.recordsLast7 = rec7;
-        this.completion7 = rec7 / 42.0;
+        this.completion7 = rec7 / (7.0 * Slots.COUNT);
 
         // 日均线性回归（近 30 天，样本不足用全部）
         List<DayPoint> window = new ArrayList<>();
@@ -595,9 +595,9 @@ public final class Stats {
             out.add("按近 30 天日均速度，预计 " + Fmt.cn(predictDate)
                     + " 达成 " + Fmt.kg(target) + " kg。");
         }
-        if (recordsLast7 < 42) {
-            out.add("近 7 天完成 " + recordsLast7 + " / 42 次记录，今日 "
-                    + todayCount + " / 6 次。");
+        if (recordsLast7 < 7 * Slots.COUNT) {
+            out.add("近 7 天完成 " + recordsLast7 + " / " + (7 * Slots.COUNT) + " 次记录，今日 "
+                    + todayCount + " / " + Slots.COUNT + " 次。");
         }
         MealDelta strongest = null;
         for (MealDelta m : meals) {

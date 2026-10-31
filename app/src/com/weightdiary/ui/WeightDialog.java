@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.weightdiary.R;
@@ -29,11 +31,6 @@ import java.util.List;
  * 录入 / 修改体重：可在弹窗内选择“第几次”（1 为早餐前）。
  */
 public final class WeightDialog {
-
-    private static final int[] CHIP_IDS = {
-            R.id.slotChip0, R.id.slotChip1, R.id.slotChip2,
-            R.id.slotChip3, R.id.slotChip4, R.id.slotChip5
-    };
 
     private WeightDialog() {
     }
@@ -69,8 +66,39 @@ public final class WeightDialog {
         final EditText et = content.findViewById(R.id.etWeight);
         final View delete = content.findViewById(R.id.btnDelete);
         final TextView[] chips = new TextView[Slots.COUNT];
-        for (int i = 0; i < Slots.COUNT; i++) {
-            chips[i] = content.findViewById(CHIP_IDS[i]);
+        LinearLayout picker = content.findViewById(R.id.slotPicker);
+        picker.removeAllViews();
+        int[][] rows = {{0, 1, 2, 3}, {4, 5, 6}};
+        for (int r = 0; r < rows.length; r++) {
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (r > 0) {
+                rowLp.topMargin = Ui.dp(activity, 6);
+            }
+            row.setLayoutParams(rowLp);
+
+            for (int c = 0; c < rows[r].length; c++) {
+                int slot = rows[r][c];
+                TextView chip = new TextView(activity);
+                chip.setText((slot + 1) + " " + Slots.name(slot));
+                chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
+                chip.setGravity(Gravity.CENTER);
+                chip.setBackgroundResource(R.drawable.bg_pill_off);
+                chip.setTextColor(Ui.color(activity, R.color.text_secondary));
+                chip.setClickable(true);
+                chip.setFocusable(true);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        0, Ui.dp(activity, 32), 1f);
+                if (c > 0) {
+                    lp.leftMargin = Ui.dp(activity, 6);
+                }
+                chip.setLayoutParams(lp);
+                row.addView(chip);
+                chips[slot] = chip;
+            }
+            picker.addView(row);
         }
 
         class Controller {

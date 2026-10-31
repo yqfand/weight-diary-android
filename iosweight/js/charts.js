@@ -1,5 +1,5 @@
 import {
-  SLOTS, SLOT_COLORS, clamp, fmtDateCN, fmtKg, fmtMD, fmtFullCN, weekdayCN,
+  SLOTS, SLOT_COLORS, SLOT_COUNT, clamp, fmtDateCN, fmtKg, fmtMD, fmtFullCN, weekdayCN,
 } from './storage.js';
 
 const FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif';
@@ -117,7 +117,7 @@ export class SixChart {
     this.canvas = canvas;
     this.tooltip = tooltip;
     this.entries = [];
-    this.visible = new Set([0, 1, 2, 3, 4, 5]);
+    this.visible = new Set(Array.from({ length: SLOT_COUNT }, (_, i) => i));
     this.selected = -1;
     this.pressing = false;
     this.geom = null;
@@ -652,7 +652,7 @@ export function renderHeatmap(container, month, entries, today) {
     }
     const t = range < 0.05 ? 0.5 : (entry.avg - min) / range;
     const [r, g, b] = heatColor(t);
-    const alpha = 0.28 + 0.72 * Math.min(6, entry.count) / 6;
+    const alpha = 0.28 + 0.72 * Math.min(SLOT_COUNT, entry.count) / SLOT_COUNT;
     const dark = alpha > 0.72;
     cells += `<div class="heat-day has-data${iso === today ? ' today' : ''}" style="background:rgba(${r},${g},${b},${alpha.toFixed(2)});color:${dark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)'}">${day}</div>`;
   }

@@ -34,100 +34,11 @@
         android:textSize="10sp" />
 
     <LinearLayout
+        android:id="@+id/slotPicker"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/slotChip0"
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_off"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="1 早餐前"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/slotChip1"
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_off"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="2 早餐后"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/slotChip2"
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_off"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="3 午餐前"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/slotChip3"
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_off"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="4 午餐后"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/slotChip4"
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_off"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="5 晚餐前"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/slotChip5"
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_off"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:text="6 晚餐后"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp" />
-    </LinearLayout>
+        android:orientation="vertical" />
 
     <TextView
         android:id="@+id/dialogPrev"

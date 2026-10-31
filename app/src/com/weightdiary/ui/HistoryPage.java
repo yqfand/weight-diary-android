@@ -159,7 +159,7 @@ public class HistoryPage extends Page {
             day.setTextColor(primary);
 
             TextView meta = new TextView(activity);
-            meta.setText(Fmt.week(date) + " · " + dayRecords.size() + " / 6 次"
+            meta.setText(Fmt.week(date) + " · " + dayRecords.size() + " / " + Slots.COUNT + " 次"
                     + (expandedDate != null && expandedDate.equals(date) ? " · 收起" : ""));
             meta.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f);
             meta.setTextColor(tertiary);
@@ -171,7 +171,7 @@ public class HistoryPage extends Page {
 
             SlotDotsView dots = new SlotDotsView(activity);
             LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
-                    Ui.dp(activity, 42), Ui.dp(activity, 12));
+                    Ui.dp(activity, 46), Ui.dp(activity, 12));
             dlp.setMarginEnd(Ui.dp(activity, 8));
             dots.setLayoutParams(dlp);
             dots.setDay(dayRecords);

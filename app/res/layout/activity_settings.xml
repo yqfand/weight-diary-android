@@ -217,7 +217,7 @@
             android:layout_marginTop="26dp"
             android:gravity="center"
             android:letterSpacing="0.1"
-            android:text="体重日记 · v1.3"
+            android:text="体重日记 · v1.4"
             android:textColor="@color/text_tertiary"
             android:textSize="10sp" />
     </LinearLayout>

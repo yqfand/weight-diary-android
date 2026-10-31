@@ -1,14 +1,14 @@
-const CACHE = 'weightdiary-v1.2.2';
+const CACHE = 'weightdiary-v1.4.0';
 
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
-  './js/app.js?v=1.2.2',
+  './js/app.js?v=1.4',
   './js/storage.js',
   './js/stats.js',
-  './js/charts.js?v=1.2.2',
+  './js/charts.js?v=1.4',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',

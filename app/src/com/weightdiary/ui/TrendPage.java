@@ -42,10 +42,10 @@ public class TrendPage extends Page {
     private final TextView modeDaily;
     private final LinearLayout[] chips = new LinearLayout[Slots.COUNT + 1];
 
-    private final boolean[] visible = {true, true, true, true, true, true};
+    private final boolean[] visible = {true, true, true, true, true, true, true};
     private boolean showAverage = true;
     private int range = 1; // 0:7天 1:30天 2:90天 3:全部
-    private int mode = 0;  // 0:六次对比 1:日均曲线
+    private int mode = 0;  // 0:七次对比 1:日均曲线
 
     public TrendPage(Activity activity, ViewGroup parent) {
         super(activity, parent, R.layout.page_trend);
@@ -211,7 +211,7 @@ public class TrendPage extends Page {
         chartSlots.setVisibility(slotsMode ? View.VISIBLE : View.GONE);
         chartDaily.setVisibility(slotsMode ? View.GONE : View.VISIBLE);
         legendRow.setVisibility(slotsMode ? View.VISIBLE : View.GONE);
-        tvChartTitle.setText(slotsMode ? "六次对比" : "日均曲线");
+        tvChartTitle.setText(slotsMode ? "七次对比" : "日均曲线");
         tvChartHint.setText(slotsMode ? "点击图例筛选" : "平滑曲线 · 7日均线");
 
         List<Record> daily = new ArrayList<>();
@@ -227,7 +227,7 @@ public class TrendPage extends Page {
                     : Fmt.md(from) + " – " + Fmt.md(today);
             tvTrendSub.setText(filtered.isEmpty()
                     ? "这段时间还没有记录"
-                    : filtered.size() + " 条记录 · 6 时段 · " + window);
+                    : filtered.size() + " 条记录 · " + Slots.COUNT + " 时段 · " + window);
         } else {
             chartDaily.setData(daily, st.target, true);
             String window = daily.isEmpty() ? "—"

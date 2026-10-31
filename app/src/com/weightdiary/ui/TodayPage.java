@@ -3,7 +3,9 @@ package com.weightdiary.ui;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Typeface;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -25,19 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TodayPage extends Page {
-
-    private static final int[] TILE_IDS = {
-            R.id.tileSlot0, R.id.tileSlot1, R.id.tileSlot2,
-            R.id.tileSlot3, R.id.tileSlot4, R.id.tileSlot5
-    };
-    private static final int[] VALUE_IDS = {
-            R.id.tvSlot0, R.id.tvSlot1, R.id.tvSlot2,
-            R.id.tvSlot3, R.id.tvSlot4, R.id.tvSlot5
-    };
-    private static final int[] DOT_IDS = {
-            R.id.dotSlot0, R.id.dotSlot1, R.id.dotSlot2,
-            R.id.dotSlot3, R.id.dotSlot4, R.id.dotSlot5
-    };
 
     private final TextView tvHeroHint;
     private final TextView tvTodayWeight;
@@ -85,26 +74,96 @@ public class TodayPage extends Page {
         ring = root.findViewById(R.id.ringToday);
         spark = root.findViewById(R.id.sparkToday);
 
-        for (int i = 0; i < Slots.COUNT; i++) {
-            final int slot = i;
-            tiles[i] = root.findViewById(TILE_IDS[i]);
-            slotValues[i] = root.findViewById(VALUE_IDS[i]);
-            View dot = root.findViewById(DOT_IDS[i]);
-            dot.setBackgroundTintList(ColorStateList.valueOf(Slots.color(activity, i)));
-            tiles[i].setOnClickListener(v ->
-                    WeightDialog.show(activity, LocalDate.now(), slot));
-        }
+        buildTiles();
 
         btnRecord.setOnClickListener(v -> {
             LocalDate today = LocalDate.now();
             if (nextSlot >= 0) {
                 WeightDialog.show(activity, today, nextSlot);
             } else {
-                Ui.toast(activity, "今日六次已全部记录，点击下方方格可修改");
+                Ui.toast(activity, "今日 7 次已全部记录，点击下方方格可修改");
             }
         });
         tvGoalNote.setOnClickListener(v ->
                 activity.startActivity(new Intent(activity, SettingsActivity.class)));
+    }
+
+    private void buildTiles() {
+        LinearLayout container = root.findViewById(R.id.tileContainer);
+        container.removeAllViews();
+        int[][] rows = {{0, 1, 2, 3}, {4, 5, 6}};
+        for (int r = 0; r < rows.length; r++) {
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (r > 0) {
+                rowLp.topMargin = Ui.dp(activity, 8);
+            }
+            row.setLayoutParams(rowLp);
+
+            for (int c = 0; c < rows[r].length; c++) {
+                final int slot = rows[r][c];
+                LinearLayout tile = new LinearLayout(activity);
+                tile.setOrientation(LinearLayout.VERTICAL);
+                tile.setBackgroundResource(R.drawable.bg_card_soft);
+                tile.setClickable(true);
+                tile.setFocusable(true);
+                tile.setPadding(Ui.dp(activity, 10), Ui.dp(activity, 10),
+                        Ui.dp(activity, 10), Ui.dp(activity, 10));
+
+                LinearLayout.LayoutParams tileLp = new LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                if (c > 0) {
+                    tileLp.leftMargin = Ui.dp(activity, 8);
+                }
+                tile.setLayoutParams(tileLp);
+
+                LinearLayout head = new LinearLayout(activity);
+                head.setOrientation(LinearLayout.HORIZONTAL);
+                head.setGravity(Gravity.CENTER_VERTICAL);
+
+                View dot = new View(activity);
+                LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(
+                        Ui.dp(activity, 7), Ui.dp(activity, 7));
+                dot.setLayoutParams(dotLp);
+                dot.setBackgroundResource(R.drawable.bg_dot);
+                dot.setBackgroundTintList(ColorStateList.valueOf(Slots.color(activity, slot)));
+
+                TextView name = new TextView(activity);
+                name.setText(Slots.name(slot));
+                name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f);
+                name.setTextColor(Ui.color(activity, R.color.text_tertiary));
+                LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                nameLp.leftMargin = Ui.dp(activity, 5);
+                name.setLayoutParams(nameLp);
+
+                head.addView(dot);
+                head.addView(name);
+                tile.addView(head);
+
+                TextView value = new TextView(activity);
+                value.setText("—");
+                value.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f);
+                value.setTextColor(Ui.color(activity, R.color.text_primary));
+                value.setTypeface(null, Typeface.BOLD);
+                value.setIncludeFontPadding(false);
+                LinearLayout.LayoutParams valueLp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                valueLp.topMargin = Ui.dp(activity, 5);
+                value.setLayoutParams(valueLp);
+                tile.addView(value);
+
+                tile.setOnClickListener(v ->
+                        WeightDialog.show(activity, LocalDate.now(), slot));
+                row.addView(tile);
+
+                tiles[slot] = tile;
+                slotValues[slot] = value;
+            }
+            container.addView(row);
+        }
     }
 
     @Override
@@ -125,7 +184,7 @@ public class TodayPage extends Page {
             tvTodayWeight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 48f);
             tvTodayWeight.setTextColor(primary);
             tvTodayWeight.setText(Fmt.kg(st.todayAvg));
-            tvHeroHint.setText("今日日均 · " + st.todayCount + " / 6 次");
+            tvHeroHint.setText("今日日均 · " + st.todayCount + " / " + Slots.COUNT + " 次");
             if (st.prevDay != null && !Double.isNaN(st.prevDayAvg)) {
                 double delta = st.todayAvg - st.prevDayAvg;
                 tvTodayDelta.setText("较 " + Fmt.cn(st.prevDay) + " " + Fmt.signedKg(delta));
@@ -175,8 +234,8 @@ public class TodayPage extends Page {
                     : "设置目标体重，开启进度追踪");
         }
 
-        tvCompletion.setText(st.todayCount + " / 6");
-        tvCompletion.setTextColor(st.todayCount >= 6 ? mint : Ui.color(activity, R.color.text_secondary));
+        tvCompletion.setText(st.todayCount + " / " + Slots.COUNT);
+        tvCompletion.setTextColor(st.todayCount >= Slots.COUNT ? mint : Ui.color(activity, R.color.text_secondary));
 
         nextSlot = -1;
         Record[] dayRecords = new Record[Slots.COUNT];
@@ -220,7 +279,7 @@ public class TodayPage extends Page {
         }
         btnRecord.setText(nextSlot >= 0
                 ? "记录 · " + Slots.name(nextSlot)
-                : "今日已完成 · 6 / 6");
+                : "今日已完成 · " + Slots.COUNT + " / " + Slots.COUNT);
 
         tvStatWeek.setText(Double.isNaN(st.weekAvg) ? "—" : Fmt.kg(st.weekAvg));
         tvStatStreak.setText(st.streakDays > 0 ? st.streakDays + " 天" : "—");
