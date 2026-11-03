@@ -1,6 +1,6 @@
 import {
   SLOTS, SLOT_COUNT, addDays, clamp, diffDays, mondayOf, todayISO, weekdayCN,
-} from './storage.js?v=1.4';
+} from './storage.js?v=1.4.2';
 
 /* 每日汇总：日均、次数、当天极值、各时段数值 */
 export function dailyEntries(records) {

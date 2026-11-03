@@ -29,8 +29,8 @@ import java.util.List;
 public class MultiLineChartView extends View {
 
     private final List<Record> data = new ArrayList<>();
-    private final boolean[] visible = {true, true, true, true, true, true, true};
-    private boolean showAverage = true;
+    private final boolean[] visible = {false, false, false, false, false, false, false};
+    private boolean showAverage = false;
 
     private LocalDate from = LocalDate.now();
     private LocalDate to = LocalDate.now();
@@ -245,7 +245,7 @@ public class MultiLineChartView extends View {
         }
         if (!any) {
             hintPaint.setColor(Color.parseColor("#4DFFFFFF"));
-            canvas.drawText("已隐藏全部时段", getWidth() / 2f, getHeight() / 2f, hintPaint);
+            canvas.drawText("点击上方图例选择时段", getWidth() / 2f, getHeight() / 2f, hintPaint);
             return;
         }
 
