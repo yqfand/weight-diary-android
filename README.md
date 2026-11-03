@@ -31,7 +31,7 @@
 
 ### 可视化
 
-- **七次对比**：七条固定色系折线，同一日期维度上平行展示 7 个时段；点击图例可单独隐藏/显示时段
+- **七次对比**：七条固定色系折线，同一日期维度上平行展示 7 个时段；初始不显示任何曲线，点击图例才显示对应时段，可任意多选或全部关闭
 - **触摸查询**：按在图上可查看该日七个时段的数值与日均
 - **日均曲线**：每日均值单线 + 7 日均线，支持 7 / 30 / 90 天与全部区间
 - 每周变化柱状图（按周日均对比）
@@ -173,7 +173,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 2. `javac`（`-source 1.8`，`bootclasspath` 指向 `android.jar` + lambda stubs）
 3. `d8 --min-api 26` 生成 `classes.dex`
 4. 将 dex 写入 APK → `zipalign` → `apksigner` 签名
-5. 输出：`WeightDiary-v1.4.apk`
+5. 输出：`WeightDiary-v1.5.apk`
 
 > 首次构建会在 `.build/debug.keystore` 自动生成调试签名（口令 `android`）。如需发布，请替换为自己的正式签名，并同步调整 `versionCode` / `versionName`（位于 `app/AndroidManifest.xml`）。
 
@@ -235,6 +235,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 ## 版本记录
 
+- **v1.5**：趋势页「七次对比」改为初始不选中任何时段，点击图例才显示对应曲线，可多选或全部关闭；安卓与网页版同步
 - **v1.4**：新增第 7 个时段「睡前」；首页改为 4 + 3 两行共七格，录入弹窗提供 7 个时段；趋势页七条平行曲线；完整度按 49 次计算；网页版同步
 - **v1.3**：趋势曲线改用 Catmull-Rom 平滑连续曲线，移除逐记录圆点与最近点/极值标记，六条线统一线宽；网页版同步
 - **v1.2 网页版**：新增 `iosweight/` PWA，可在 iPhone 主屏幕安装、离线使用，并部署到 GitHub Pages

@@ -42,8 +42,8 @@ public class TrendPage extends Page {
     private final TextView modeDaily;
     private final LinearLayout[] chips = new LinearLayout[Slots.COUNT + 1];
 
-    private final boolean[] visible = {true, true, true, true, true, true, true};
-    private boolean showAverage = true;
+    private final boolean[] visible = {false, false, false, false, false, false, false};
+    private boolean showAverage = false;
     private int range = 1; // 0:7天 1:30天 2:90天 3:全部
     private int mode = 0;  // 0:七次对比 1:日均曲线
 

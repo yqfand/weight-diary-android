@@ -1,6 +1,6 @@
 import {
   SLOTS, SLOT_COLORS, SLOT_COUNT, clamp, fmtDateCN, fmtKg, fmtMD, fmtFullCN, weekdayCN,
-} from './storage.js?v=1.4';
+} from './storage.js?v=1.4.2';
 
 const FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif';
 
@@ -117,7 +117,7 @@ export class SixChart {
     this.canvas = canvas;
     this.tooltip = tooltip;
     this.entries = [];
-    this.visible = new Set(Array.from({ length: SLOT_COUNT }, (_, i) => i));
+    this.visible = new Set();
     this.selected = -1;
     this.pressing = false;
     this.geom = null;

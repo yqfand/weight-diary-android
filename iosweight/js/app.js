@@ -1,15 +1,15 @@
 import {
   SLOTS, SLOT_COLORS, SLOT_COUNT, addDays, addMonths, diffDays, fmtDateCN, fmtDelta, fmtFullCN, fmtKg,
   fmtMD, monthLabel, monthOf, prefs, store, todayISO, weekdayCN,
-} from './storage.js?v=1.4';
+} from './storage.js?v=1.4.2';
 import {
   bmi, buildInsights, completion, dailyEntries, goal, intradayRange, latestEntry, mealDeltas,
   previousEntry, rangeEntries, regression, slotAverages, streak, summary, totalChange,
   volatility, weekAverage, weekBars, weekChange,
-} from './stats.js?v=1.4';
+} from './stats.js?v=1.4.2';
 import {
   DailyChart, SixChart, drawSparkline, drawWeeklyBars, renderHeatmap, renderSlotAverages,
-} from './charts.js?v=1.4';
+} from './charts.js?v=1.4.2';
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,7 +26,7 @@ const state = {
   lastTab: 'today',
   trendRange: 30,
   trendMode: 'six',
-  visibleSlots: new Set([0, 1, 2, 3, 4, 5, 6]),
+  visibleSlots: new Set(),
   month: monthOf(todayISO()),
   heatMonth: monthOf(todayISO()),
   openDates: new Set(),
@@ -257,7 +257,7 @@ function renderTrend() {
       for (const e of filtered) if (e.slots[slot] != null) values += 1;
     }
     $('trendEmpty').classList.toggle('hidden', values > 0);
-    $('trendEmpty').textContent = filtered.length ? '当前没有可显示的时段' : '还没有数据，先记录一次吧';
+    $('trendEmpty').textContent = filtered.length ? '点击上方图例选择时段' : '还没有数据，先记录一次吧';
   } else {
     chart.setData(filtered, prefs.target);
     $('trendEmpty').classList.toggle('hidden', filtered.length > 0);
@@ -653,10 +653,6 @@ function bindEvents() {
     if (!btn) return;
     const slot = Number(btn.dataset.slot);
     if (state.visibleSlots.has(slot)) {
-      if (state.visibleSlots.size === 1) {
-        toast('至少保留一个时段');
-        return;
-      }
       state.visibleSlots.delete(slot);
     } else {
       state.visibleSlots.add(slot);
