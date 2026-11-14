@@ -1,18 +1,24 @@
 import {
-  SLOTS, SLOT_COUNT, addDays, clamp, diffDays, mondayOf, todayISO, weekdayCN,
-} from './storage.js?v=1.4.2';
+  DAILY_AVG_SLOTS, SLOTS, SLOT_COUNT, addDays, clamp, diffDays, mondayOf, todayISO, weekdayCN,
+} from './storage.js?v=1.6.0';
 
-/* 每日汇总：日均、次数、当天极值、各时段数值 */
+/* 每日汇总：日均（仅早餐前/午餐前/晚餐前/睡前）、次数、当天极值、各时段数值 */
 export function dailyEntries(records) {
   const map = new Map();
   for (const r of records) {
     let entry = map.get(r.date);
     if (!entry) {
-      entry = { date: r.date, count: 0, sum: 0, min: Infinity, max: -Infinity, slots: {} };
+      entry = {
+        date: r.date, count: 0, avgSum: 0, avgCount: 0,
+        min: Infinity, max: -Infinity, slots: {},
+      };
       map.set(r.date, entry);
     }
     entry.count += 1;
-    entry.sum += r.weight;
+    if (DAILY_AVG_SLOTS.has(r.slot)) {
+      entry.avgSum += r.weight;
+      entry.avgCount += 1;
+    }
     entry.min = Math.min(entry.min, r.weight);
     entry.max = Math.max(entry.max, r.weight);
     entry.slots[r.slot] = r.weight;
@@ -22,7 +28,8 @@ export function dailyEntries(records) {
     list.push({
       date: entry.date,
       count: entry.count,
-      avg: entry.sum / entry.count,
+      avg: entry.avgCount > 0 ? entry.avgSum / entry.avgCount : null,
+      avgCount: entry.avgCount,
       min: entry.min,
       max: entry.max,
       slots: entry.slots,
@@ -43,26 +50,41 @@ export function rangeEntries(entries, range) {
   return entries.filter((e) => e.date >= from);
 }
 
+/* 只保留当天有有效日均的日期 */
+export function avgEntries(entries) {
+  return entries.filter((e) => e.avg != null);
+}
+
 export function summary(entries) {
-  if (!entries.length) return null;
+  const list = avgEntries(entries);
+  if (!list.length) return null;
   let min = Infinity;
   let max = -Infinity;
   let sum = 0;
-  for (const e of entries) {
+  for (const e of list) {
     min = Math.min(min, e.avg);
     max = Math.max(max, e.avg);
     sum += e.avg;
   }
-  return { min, max, avg: sum / entries.length, count: entries.length };
+  return { min, max, avg: sum / list.length, count: list.length };
 }
 
 export function latestEntry(entries) {
   return entries.length ? entries[entries.length - 1] : null;
 }
 
+/** 最近一个「有日均」的日期 */
+export function latestValidEntry(entries) {
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].avg != null) return entries[i];
+  }
+  return null;
+}
+
+/** 指定日期之前最近一个「有日均」的日期 */
 export function previousEntry(entries, date) {
   for (let i = entries.length - 1; i >= 0; i--) {
-    if (entries[i].date < date) return entries[i];
+    if (entries[i].date < date && entries[i].avg != null) return entries[i];
   }
   return null;
 }
@@ -71,7 +93,7 @@ export function previousEntry(entries, date) {
 export function weekAverage(entries, offset = 0) {
   const start = addDays(mondayOf(todayISO()), offset * 7);
   const end = addDays(start, 6);
-  const list = entries.filter((e) => e.date >= start && e.date <= end);
+  const list = avgEntries(entries.filter((e) => e.date >= start && e.date <= end));
   if (!list.length) return null;
   const sum = list.reduce((acc, e) => acc + e.avg, 0);
   return { avg: sum / list.length, count: list.length, start, end };
@@ -101,8 +123,9 @@ export function weekBars(entries, weeks = 8) {
 
 /* 线性回归：日均 kg/天，返回斜率、周速度与 R² */
 export function regression(entries) {
-  let list = entries.slice(-30);
-  if (list.length < 3) list = entries.slice();
+  const source = avgEntries(entries);
+  let list = source.slice(-30);
+  if (list.length < 3) list = source.slice();
   if (list.length < 2) return null;
   const base = list[0].date;
   const xs = list.map((e) => diffDays(base, e.date));
@@ -131,7 +154,7 @@ export function regression(entries) {
 
 /* 每日均值相邻两天差值的样本标准差 */
 export function volatility(entries) {
-  const list = entries.filter((e) => e.date >= addDays(todayISO(), -29));
+  const list = avgEntries(entries).filter((e) => e.date >= addDays(todayISO(), -29));
   const diffs = [];
   for (let i = 1; i < list.length; i++) {
     if (diffDays(list[i - 1].date, list[i].date) === 1) {
@@ -182,7 +205,7 @@ export function mealDeltas(entries) {
   return { meals, best };
 }
 
-/* 近 30 天六个时段的均值 */
+/* 近 30 天七个时段的均值 */
 export function slotAverages(records) {
   const from = addDays(todayISO(), -29);
   return SLOTS.map((name, slot) => {
@@ -228,9 +251,10 @@ export function bmi(latestAvg, heightCm) {
 }
 
 export function goal(entries, target) {
-  if (!target || !entries.length) return null;
-  const first = entries[0].avg;
-  const latest = entries[entries.length - 1].avg;
+  const valid = avgEntries(entries);
+  if (!target || !valid.length) return null;
+  const first = valid[0].avg;
+  const latest = valid[valid.length - 1].avg;
   const remaining = latest - target;
   if (remaining <= 0) {
     return { achieved: true, progress: 100, remaining: 0, etaDays: 0, eta: null };
@@ -254,8 +278,9 @@ export function goal(entries, target) {
 }
 
 export function totalChange(entries) {
-  if (entries.length < 2) return null;
-  return entries[entries.length - 1].avg - entries[0].avg;
+  const valid = avgEntries(entries);
+  if (valid.length < 2) return null;
+  return valid[valid.length - 1].avg - valid[0].avg;
 }
 
 export function weekdayShort(iso) {
@@ -265,10 +290,11 @@ export function weekdayShort(iso) {
 /* 生成今日/分析页使用的建议 */
 export function buildInsights(entries, records, target) {
   const out = [];
-  if (entries.length < 2) {
-    out.push('记录满两天后，这里会出现趋势速度、餐前餐后差值与目标预测。');
-    if (entries.length === 1) {
-      out.push('今天先完成一次记录，明天同一时段再测一次即可形成对比。');
+  const valid = avgEntries(entries);
+  if (valid.length < 2) {
+    out.push('记录满两天且包含饭前 / 睡前数据后，这里会出现趋势速度、餐前餐后差值与目标预测。');
+    if (valid.length === 1) {
+      out.push('明天同一时段再测一次（早餐前 / 午餐前 / 晚餐前 / 睡前），即可形成日均对比。');
     }
     return out;
   }

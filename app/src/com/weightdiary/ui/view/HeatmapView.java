@@ -94,15 +94,20 @@ public class HeatmapView extends View {
             int dayOfMonth = r.date.getDayOfMonth();
             double[] arr = byDay.get(dayOfMonth);
             if (arr == null) {
-                arr = new double[]{0.0, 0.0, Double.MAX_VALUE, -Double.MAX_VALUE};
+                // 0=日均累计（仅饭前/睡前）, 1=日均条数, 2=当天总记录数
+                arr = new double[]{0.0, 0.0, 0.0};
                 byDay.put(dayOfMonth, arr);
             }
-            arr[0] += r.weight;
-            arr[1] += 1.0;
-            arr[2] = Math.min(arr[2], r.weight);
-            arr[3] = Math.max(arr[3], r.weight);
+            arr[2] += 1.0;
+            if (Slots.countsInDailyAvg(r.slot)) {
+                arr[0] += r.weight;
+                arr[1] += 1.0;
+            }
         }
         for (double[] arr : byDay.values()) {
+            if (arr[1] <= 0) {
+                continue;
+            }
             double avg = arr[0] / arr[1];
             min = Math.min(min, avg);
             max = Math.max(max, avg);
@@ -126,17 +131,23 @@ public class HeatmapView extends View {
             LocalDate date = month.withDayOfMonth(day);
             double[] arr = byDay.get(day);
             boolean recorded = arr != null;
+            boolean hasAvg = recorded && arr[1] > 0;
             boolean future = date.isAfter(today);
 
-            if (recorded) {
+            if (hasAvg) {
                 double avg = arr[0] / arr[1];
-                int count = (int) arr[1];
+                int count = (int) arr[2];
                 float t = (max - min) < 0.01 ? 0.5f : (float) ((avg - min) / (max - min));
                 int alpha = 0x60 + (int) ((0xAA - 0x60) * (count / (float) Slots.COUNT));
                 int color = weightColor(t, alpha);
                 cellPaint.setColor(color);
                 canvas.drawRoundRect(cell, dp(7f), dp(7f), cellPaint);
                 textPaint.setColor(Color.WHITE);
+            } else if (recorded) {
+                // 当天有记录但没有饭前 / 睡前数据，不参与日均着色
+                cellPaint.setColor(Color.parseColor("#1FFFFFFF"));
+                canvas.drawRoundRect(cell, dp(7f), dp(7f), cellPaint);
+                textPaint.setColor(Color.parseColor("#99FFFFFF"));
             } else if (future) {
                 cellPaint.setColor(Color.parseColor("#05FFFFFF"));
                 canvas.drawRoundRect(cell, dp(7f), dp(7f), cellPaint);

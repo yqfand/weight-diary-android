@@ -47,6 +47,13 @@ public final class Slots {
         return clamp(slot) % 2 == 1;
     }
 
+    /**
+     * 是否计入「日均」：早餐前、午餐前、晚餐前、睡前（偶数时段），餐后时段不参与。
+     */
+    public static boolean countsInDailyAvg(int slot) {
+        return clamp(slot) % 2 == 0;
+    }
+
     public static String name(int slot) {
         return NAME[clamp(slot)];
     }

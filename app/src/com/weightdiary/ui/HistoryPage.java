@@ -85,10 +85,16 @@ public class HistoryPage extends Page {
         }
         for (Map.Entry<LocalDate, List<Record>> e : groupAll.entrySet()) {
             double sum = 0.0;
+            int n = 0;
             for (Record r : e.getValue()) {
-                sum += r.weight;
+                if (Slots.countsInDailyAvg(r.slot)) {
+                    sum += r.weight;
+                    n++;
+                }
             }
-            dayAvgAll.put(e.getKey(), sum / e.getValue().size());
+            if (n > 0) {
+                dayAvgAll.put(e.getKey(), sum / n);
+            }
         }
 
         Map<LocalDate, List<Record>> groupMonth = new TreeMap<>();
@@ -122,19 +128,25 @@ public class HistoryPage extends Page {
         int dayCount = groupMonth.size();
         int recordCount = 0;
         double dayAvgSum = 0.0;
+        int avgDayCount = 0;
         for (Map.Entry<LocalDate, List<Record>> e : groupMonth.entrySet()) {
             recordCount += e.getValue().size();
-            dayAvgSum += dayAvgAll.get(e.getKey());
+            Double avg = dayAvgAll.get(e.getKey());
+            if (avg != null) {
+                dayAvgSum += avg;
+                avgDayCount++;
+            }
         }
-        tvMonthSummary.setText(dayCount + " 天 · 日均 " + Fmt.kg(dayAvgSum / dayCount)
-                + " kg · " + recordCount + " 次");
+        tvMonthSummary.setText(avgDayCount > 0
+                ? dayCount + " 天 · 日均 " + Fmt.kg(dayAvgSum / avgDayCount) + " kg · " + recordCount + " 次"
+                : dayCount + " 天 · 暂无日均 · " + recordCount + " 次");
 
         List<LocalDate> dates = new ArrayList<>(groupMonth.keySet());
         // 日期倒序
         for (int i = dates.size() - 1; i >= 0; i--) {
             LocalDate date = dates.get(i);
             List<Record> dayRecords = groupMonth.get(date);
-            double dayAvg = dayAvgAll.get(date);
+            Double dayAvg = dayAvgAll.get(date);
 
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -179,7 +191,7 @@ public class HistoryPage extends Page {
 
             Double prevAvg = dayAvgAll.lowerKey(date) != null
                     ? dayAvgAll.get(dayAvgAll.lowerKey(date)) : null;
-            if (prevAvg != null) {
+            if (prevAvg != null && dayAvg != null) {
                 double delta = dayAvg - prevAvg;
                 TextView badge = new TextView(activity);
                 badge.setText(Fmt.signed(delta));
@@ -196,9 +208,9 @@ public class HistoryPage extends Page {
             }
 
             TextView weight = new TextView(activity);
-            weight.setText(Fmt.kg(dayAvg) + " kg");
+            weight.setText(dayAvg != null ? Fmt.kg(dayAvg) + " kg" : "—");
             weight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f);
-            weight.setTextColor(primary);
+            weight.setTextColor(dayAvg != null ? primary : tertiary);
             weight.setTypeface(null, Typeface.BOLD);
             row.addView(weight);
 

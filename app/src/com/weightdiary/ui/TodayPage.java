@@ -179,7 +179,15 @@ public class TodayPage extends Page {
         int tertiary = Ui.color(activity, R.color.text_tertiary);
         int primary = Ui.color(activity, R.color.text_primary);
 
-        if (st.todayCount > 0) {
+        if (st.todayCount > 0 && Double.isNaN(st.todayAvg)) {
+            tvUnit.setVisibility(View.GONE);
+            tvTodayWeight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f);
+            tvTodayWeight.setTextColor(tertiary);
+            tvTodayWeight.setText("—");
+            tvHeroHint.setText("今日暂无日均 · " + st.todayCount + " / " + Slots.COUNT + " 次");
+            tvTodayDelta.setText("日均只统计饭前与睡前记录");
+            tvTodayDelta.setTextColor(tertiary);
+        } else if (st.todayCount > 0) {
             tvUnit.setVisibility(View.VISIBLE);
             tvTodayWeight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 48f);
             tvTodayWeight.setTextColor(primary);
@@ -190,15 +198,15 @@ public class TodayPage extends Page {
                 tvTodayDelta.setText("较 " + Fmt.cn(st.prevDay) + " " + Fmt.signedKg(delta));
                 tvTodayDelta.setTextColor(delta < -0.05 ? mint : (delta > 0.05 ? coral : tertiary));
             } else {
-                tvTodayDelta.setText("今日第一组数据，继续记录可对比");
+                tvTodayDelta.setText("今日第一组日均数据，继续记录可对比");
                 tvTodayDelta.setTextColor(tertiary);
             }
         } else if (st.hasData) {
             tvUnit.setVisibility(View.VISIBLE);
             tvTodayWeight.setTextSize(TypedValue.COMPLEX_UNIT_SP, 48f);
             tvTodayWeight.setTextColor(Ui.color(activity, R.color.text_secondary));
-            tvTodayWeight.setText(Fmt.kg(st.latestAvg));
-            tvHeroHint.setText("今日未记录");
+            tvTodayWeight.setText(Double.isNaN(st.latestAvg) ? "—" : Fmt.kg(st.latestAvg));
+            tvHeroHint.setText(Double.isNaN(st.latestAvg) ? "暂无日均" : "今日未记录");
             long gap = Math.max(0, ChronoUnit.DAYS.between(st.latestDay, today));
             String when = gap == 0 ? "今天" : (gap == 1 ? "昨天" : gap + " 天前");
             tvTodayDelta.setText("上次记录 " + Fmt.md(st.latestDay) + " · " + when);
@@ -219,7 +227,9 @@ public class TodayPage extends Page {
             tvRingPct.setText(Fmt.percent(st.goalProgress));
             tvRingLabel.setText("目标进度");
             double remain = st.remainingToTarget();
-            if (remain <= 0.05) {
+            if (Double.isNaN(remain)) {
+                tvGoalNote.setText("目标 " + Fmt.kg(st.target) + " kg · 等待饭前记录");
+            } else if (remain <= 0.05) {
                 tvGoalNote.setText("已达成目标 " + Fmt.kg(st.target) + " kg");
             } else {
                 tvGoalNote.setText("目标 " + Fmt.kg(st.target) + " kg · 还差 "
@@ -294,15 +304,17 @@ public class TodayPage extends Page {
 
         List<Record> recent = new ArrayList<>();
         for (Stats.DayPoint p : st.days) {
-            if (!p.date.isBefore(today.minusDays(6))) {
+            if (!Double.isNaN(p.avg) && !p.date.isBefore(today.minusDays(6))) {
                 recent.add(new Record(p.date, p.avg));
             }
         }
-        if (recent.size() < 2 && st.days.size() > 1) {
+        if (recent.size() < 2) {
             recent.clear();
-            for (int i = Math.max(0, st.days.size() - 8); i < st.days.size(); i++) {
+            for (int i = st.days.size() - 1; i >= 0 && recent.size() < 8; i--) {
                 Stats.DayPoint p = st.days.get(i);
-                recent.add(new Record(p.date, p.avg));
+                if (!Double.isNaN(p.avg)) {
+                    recent.add(0, new Record(p.date, p.avg));
+                }
             }
         }
         spark.setData(recent);

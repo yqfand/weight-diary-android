@@ -24,7 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 六时段平行折线：每条线对应固定的一个时段，横轴为日期，可配合图例筛选。
+ * 七时段平行折线：每条线对应固定的一个时段，横轴为日期，可配合图例筛选。
+ * 日均线只取早餐前 / 午餐前 / 晚餐前 / 睡前。
  */
 public class MultiLineChartView extends View {
 
@@ -179,8 +180,10 @@ public class MultiLineChartView extends View {
                 continue;
             }
             values[Slots.clamp(r.slot)][idx] = r.weight;
-            sum[idx] += r.weight;
-            cnt[idx]++;
+            if (Slots.countsInDailyAvg(r.slot)) {
+                sum[idx] += r.weight;
+                cnt[idx]++;
+            }
         }
         for (int i = 0; i < n; i++) {
             averages[i] = cnt[i] > 0 ? sum[i] / cnt[i] : Double.NaN;
@@ -337,28 +340,35 @@ public class MultiLineChartView extends View {
     }
 
     private void drawAverage(Canvas canvas, double min, double max) {
-        float[] ys = new float[dates.size()];
-        float[] x = new float[dates.size()];
-        int idx = 0;
-        for (int i = 0; i < dates.size(); i++) {
-            double v = averages[i];
-            if (Double.isNaN(v)) {
+        int n = dates.size();
+        int i = 0;
+        while (i < n) {
+            if (Double.isNaN(averages[i])) {
+                i++;
                 continue;
             }
-            x[idx] = xs[i];
-            ys[idx] = plot.top + (float) ((max - v) / (max - min) * plot.height());
-            idx++;
+            int j = i;
+            while (j + 1 < n && !Double.isNaN(averages[j + 1])) {
+                j++;
+            }
+            int len = j - i + 1;
+            if (len >= 2) {
+                float[] tx = new float[len];
+                float[] ty = new float[len];
+                for (int k = 0; k < len; k++) {
+                    tx[k] = xs[i + k];
+                    ty[k] = plot.top + (float) ((max - averages[i + k]) / (max - min) * plot.height());
+                }
+                Path p = new Path();
+                ChartUtils.smoothPath(p, tx, ty);
+                canvas.drawPath(p, avgPaint);
+            } else {
+                dotPaint.setColor(Color.parseColor("#D9FFFFFF"));
+                float y = plot.top + (float) ((max - averages[i]) / (max - min) * plot.height());
+                canvas.drawCircle(xs[i], y, dp(2f), dotPaint);
+            }
+            i = j + 1;
         }
-        if (idx < 2) {
-            return;
-        }
-        float[] tx = new float[idx];
-        float[] ty = new float[idx];
-        System.arraycopy(x, 0, tx, 0, idx);
-        System.arraycopy(ys, 0, ty, 0, idx);
-        Path p = new Path();
-        ChartUtils.smoothPath(p, tx, ty);
-        canvas.drawPath(p, avgPaint);
     }
 
     private void drawTooltip(Canvas canvas, int index, double min, double max, double span) {

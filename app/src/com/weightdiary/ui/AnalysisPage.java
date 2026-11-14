@@ -218,26 +218,36 @@ public class AnalysisPage extends Page {
 
         double[] daySum = new double[32];
         int[] dayCount = new int[32];
+        int[] avgCount = new int[32];
         for (Record r : all) {
             if (r.date.getYear() == monthStart.getYear()
                     && r.date.getMonthValue() == monthStart.getMonthValue()) {
-                daySum[r.date.getDayOfMonth()] += r.weight;
+                if (Slots.countsInDailyAvg(r.slot)) {
+                    daySum[r.date.getDayOfMonth()] += r.weight;
+                    avgCount[r.date.getDayOfMonth()]++;
+                }
                 dayCount[r.date.getDayOfMonth()]++;
             }
         }
         int recordedDays = 0;
+        int avgDays = 0;
         double avgSum = 0.0;
         for (int d = 1; d < 32; d++) {
             if (dayCount[d] > 0) {
                 recordedDays++;
-                avgSum += daySum[d] / dayCount[d];
+            }
+            if (avgCount[d] > 0) {
+                avgDays++;
+                avgSum += daySum[d] / avgCount[d];
             }
         }
         if (recordedDays == 0) {
             tvHeatSummary.setText("本月暂无记录");
+        } else if (avgDays == 0) {
+            tvHeatSummary.setText("记录 " + recordedDays + " 天 · 暂无日均");
         } else {
             tvHeatSummary.setText("记录 " + recordedDays + " 天 · 日均 "
-                    + Fmt.kg(avgSum / recordedDays) + " kg");
+                    + Fmt.kg(avgSum / avgDays) + " kg");
         }
 
         insightList.removeAllViews();

@@ -1,15 +1,15 @@
 import {
   SLOTS, SLOT_COLORS, SLOT_COUNT, addDays, addMonths, diffDays, fmtDateCN, fmtDelta, fmtFullCN, fmtKg,
   fmtMD, monthLabel, monthOf, prefs, store, todayISO, weekdayCN,
-} from './storage.js?v=1.4.2';
+} from './storage.js?v=1.6.0';
 import {
-  bmi, buildInsights, completion, dailyEntries, goal, intradayRange, latestEntry, mealDeltas,
-  previousEntry, rangeEntries, regression, slotAverages, streak, summary, totalChange,
-  volatility, weekAverage, weekBars, weekChange,
-} from './stats.js?v=1.4.2';
+  avgEntries, bmi, buildInsights, completion, dailyEntries, goal, intradayRange,
+  latestValidEntry, mealDeltas, previousEntry, rangeEntries, regression, slotAverages, streak,
+  summary, totalChange, volatility, weekAverage, weekBars, weekChange,
+} from './stats.js?v=1.6.0';
 import {
   DailyChart, SixChart, drawSparkline, drawWeeklyBars, renderHeatmap, renderSlotAverages,
-} from './charts.js?v=1.4.2';
+} from './charts.js?v=1.6.0';
 
 const $ = (id) => document.getElementById(id);
 
@@ -124,23 +124,39 @@ function renderToday() {
   const today = todayISO();
   const entries = dailyEntries(store.all());
   const todayEntry = entries.find((e) => e.date === today) || null;
-  const latest = latestEntry(entries);
-  const display = todayEntry || latest;
+  const todayHasAvg = !!todayEntry && todayEntry.avg != null;
+  const latest = latestValidEntry(entries);
 
-  $('heroLabel').textContent = todayEntry ? '今日日均' : (display ? `上次日均 · ${fmtMD(display.date)}` : '今日日均');
-  $('heroValue').textContent = display ? fmtKg(display.avg) : '—';
   $('heroCount').textContent = `${todayEntry ? todayEntry.count : 0} / ${SLOT_COUNT}`;
 
-  if (display) {
-    const prev = previousEntry(entries, display.date);
+  if (todayHasAvg) {
+    $('heroLabel').textContent = '今日日均';
+    $('heroValue').textContent = fmtKg(todayEntry.avg);
+    const prev = previousEntry(entries, today);
     if (prev) {
-      const delta = display.avg - prev.avg;
+      const delta = todayEntry.avg - prev.avg;
       setDeltaPill($('heroDelta'), `较上次 ${fmtDelta(delta)} kg`, delta);
     } else {
-      setDeltaPill($('heroDelta'), '首次记录', null);
+      setDeltaPill($('heroDelta'), '首次日均', null);
+    }
+  } else if (todayEntry) {
+    $('heroLabel').textContent = '今日日均';
+    $('heroValue').textContent = '—';
+    setDeltaPill($('heroDelta'), '日均只统计饭前与睡前', null);
+  } else if (latest) {
+    $('heroLabel').textContent = `上次日均 · ${fmtMD(latest.date)}`;
+    $('heroValue').textContent = fmtKg(latest.avg);
+    const prev = previousEntry(entries, latest.date);
+    if (prev) {
+      const delta = latest.avg - prev.avg;
+      setDeltaPill($('heroDelta'), `较上次 ${fmtDelta(delta)} kg`, delta);
+    } else {
+      setDeltaPill($('heroDelta'), '首次日均', null);
     }
   } else {
-    setDeltaPill($('heroDelta'), '暂无记录', null);
+    $('heroLabel').textContent = '今日日均';
+    $('heroValue').textContent = '—';
+    setDeltaPill($('heroDelta'), '暂无饭前 / 睡前记录', null);
   }
 
   const g = goal(entries, prefs.target);
@@ -192,11 +208,12 @@ function renderToday() {
     statHTML('连续记录', `${streak(store.all())}`, '天') +
     statHTML('累计变化', tChange == null ? '—' : fmtDelta(tChange), tChange == null ? '' : 'kg', deltaClass(tChange));
 
-  const last7 = entries.filter((e) => e.date >= addDays(today, -6));
-  drawSparkline($('sparkChart'), last7);
-  $('sparkLast').textContent = last7.length ? `最近 ${fmtKg(last7[last7.length - 1].avg)} kg` : '—';
-  if (last7.length) {
-    $('sparkLabels').innerHTML = `<span>${fmtMD(last7[0].date)}</span><span>${fmtMD(last7[last7.length - 1].date)}</span>`;
+  const last7 = avgEntries(entries.filter((e) => e.date >= addDays(today, -6)));
+  drawSparkline($('sparkChart'), last7.length > 1 ? last7 : avgEntries(entries).slice(-8));
+  const sparkList = last7.length > 1 ? last7 : avgEntries(entries).slice(-8);
+  $('sparkLast').textContent = sparkList.length ? `最近 ${fmtKg(sparkList[sparkList.length - 1].avg)} kg` : '—';
+  if (sparkList.length) {
+    $('sparkLabels').innerHTML = `<span>${fmtMD(sparkList[0].date)}</span><span>${fmtMD(sparkList[sparkList.length - 1].date)}</span>`;
   } else {
     $('sparkLabels').innerHTML = '';
   }
@@ -259,9 +276,10 @@ function renderTrend() {
     $('trendEmpty').classList.toggle('hidden', values > 0);
     $('trendEmpty').textContent = filtered.length ? '点击上方图例选择时段' : '还没有数据，先记录一次吧';
   } else {
+    const valid = avgEntries(filtered);
     chart.setData(filtered, prefs.target);
-    $('trendEmpty').classList.toggle('hidden', filtered.length > 0);
-    $('trendEmpty').textContent = '还没有数据，先记录一次吧';
+    $('trendEmpty').classList.toggle('hidden', valid.length > 0);
+    $('trendEmpty').textContent = '还没有饭前 / 睡前记录';
   }
 
   const s = summary(filtered);
@@ -297,7 +315,7 @@ function renderAnalysis() {
   const vol = volatility(entries);
   const intra = intradayRange(entries);
   const comp = completion(records);
-  const latest = latestEntry(entries);
+  const latest = latestValidEntry(entries);
   const bmiValue = bmi(latest ? latest.avg : null, prefs.height);
   const meals = mealDeltas(entries);
 
@@ -395,8 +413,11 @@ function renderHistory() {
 
   $('histMonth').textContent = monthLabel(month);
   if (monthRecords.length) {
-    const sum = inMonth.reduce((acc, e) => acc + e.avg, 0);
-    $('historySummary').textContent = `${monthRecords.length} 次 · ${inMonth.length} 天 · 平均 ${fmtKg(sum / inMonth.length)} kg`;
+    const validMonth = avgEntries(inMonth);
+    const sum = validMonth.reduce((acc, e) => acc + e.avg, 0);
+    $('historySummary').textContent = validMonth.length
+      ? `${monthRecords.length} 次 · ${inMonth.length} 天 · 平均 ${fmtKg(sum / validMonth.length)} kg`
+      : `${monthRecords.length} 次 · ${inMonth.length} 天 · 暂无日均`;
   } else {
     $('historySummary').textContent = '本月暂无记录';
   }
@@ -411,7 +432,7 @@ function renderHistory() {
 
   for (const entry of list) {
     const prev = previousEntry(entries, entry.date);
-    const delta = prev ? entry.avg - prev.avg : null;
+    const delta = prev && entry.avg != null ? entry.avg - prev.avg : null;
     const open = state.openDates.has(entry.date);
     const card = document.createElement('div');
     card.className = `day-card${open ? ' open' : ''}`;
@@ -434,12 +455,12 @@ function renderHistory() {
         <div class="day-date"><b>${parseInt(entry.date.slice(8, 10), 10)}</b><span>${weekdayCN(entry.date)}</span></div>
         <div class="day-main">
           <div class="day-line">
-            <span class="day-avg">${fmtKg(entry.avg)}<small>kg</small></span>
+            <span class="day-avg">${entry.avg == null ? '—' : `${fmtKg(entry.avg)}<small>kg</small>`}</span>
             <span class="day-delta ${deltaClass(delta)}">${delta == null ? '' : `较前 ${signed(delta)}`}</span>
           </div>
           <div class="day-dots">${dots}</div>
         </div>
-        <span class="day-count">${entry.count}/6</span>
+        <span class="day-count">${entry.count}/${SLOT_COUNT}</span>
         <span class="chev">›</span>
       </div>
       <div class="day-detail">

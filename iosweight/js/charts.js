@@ -1,6 +1,6 @@
 import {
   SLOTS, SLOT_COLORS, SLOT_COUNT, clamp, fmtDateCN, fmtKg, fmtMD, fmtFullCN, weekdayCN,
-} from './storage.js?v=1.4.2';
+} from './storage.js?v=1.6.0';
 
 const FONT = '-apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif';
 
@@ -100,7 +100,7 @@ function tooltipHTML(entry, visibleSlots, avgLabel = '日均') {
   const hasAny = Object.keys(entry.slots).length > 0;
   return `<div class="tt-date">${fmtDateCN(entry.date)} · ${weekdayCN(entry.date)}</div>` +
     (rows || `<div class="tt-row"><span>${hasAny ? '该时段未显示' : '当天未记录'}</span></div>`) +
-    `<div class="tt-avg">${avgLabel} ${fmtKg(entry.avg)} kg</div>`;
+    `<div class="tt-avg">${avgLabel} ${entry.avg == null ? '—' : `${fmtKg(entry.avg)} kg`}</div>`;
 }
 
 function placeTooltip(tooltip, geom, canvasX, wrapWidth) {
@@ -306,8 +306,14 @@ export class DailyChart {
     this.ma = entries.map((e, i) => {
       const from = Math.max(0, i - 6);
       let sum = 0;
-      for (let j = from; j <= i; j++) sum += entries[j].avg;
-      return sum / (i - from + 1);
+      let n = 0;
+      for (let j = from; j <= i; j++) {
+        if (entries[j].avg != null) {
+          sum += entries[j].avg;
+          n += 1;
+        }
+      }
+      return n ? sum / n : null;
     });
     this.draw();
   }
@@ -319,6 +325,7 @@ export class DailyChart {
     let best = -1;
     let bestDist = Infinity;
     for (let i = 0; i < this.entries.length; i++) {
+      if (this.entries[i].avg == null) continue;
       const px = this.geom.xFor(i);
       const d = Math.abs(px - x);
       if (d < bestDist) {
@@ -330,10 +337,11 @@ export class DailyChart {
     this.selected = best;
     this.draw();
     const entry = this.entries[best];
+    const ma = this.ma[best];
     this.tooltip.innerHTML =
       `<div class="tt-date">${fmtDateCN(entry.date)} · ${weekdayCN(entry.date)}</div>` +
       `<div class="tt-row"><i style="background:#46E0A8"></i><span>日均</span><b>${fmtKg(entry.avg)}</b></div>` +
-      `<div class="tt-avg">7 日均 ${fmtKg(this.ma[best])} kg · ${entry.count} 次</div>`;
+      `<div class="tt-avg">7 日均 ${ma == null ? '—' : fmtKg(ma)} kg · ${entry.count} 次</div>`;
     this.tooltip.classList.remove('hidden');
     placeTooltip(this.tooltip, this.geom, this.geom.xFor(best), this.geom.w);
   }
@@ -345,8 +353,9 @@ export class DailyChart {
       this.geom = null;
       return;
     }
-    const values = entries.map((e) => e.avg);
+    const values = entries.filter((e) => e.avg != null).map((e) => e.avg);
     if (this.target) values.push(this.target);
+    if (!values.length) values.push(65, 75);
     const domain = yDomain(values);
     const left = 36;
     const right = w - 10;
@@ -380,28 +389,35 @@ export class DailyChart {
       }
     }
 
-    const pts = entries.map((e, i) => ({ x: geom.xFor(i), y: geom.yFor(e.avg) }));
+    const pts = entries.map((e, i) => ({
+      x: geom.xFor(i),
+      y: e.avg == null ? null : geom.yFor(e.avg),
+    }));
 
-    if (pts.length === 1) {
-      ctx.save();
-      ctx.fillStyle = '#46E0A8';
-      ctx.beginPath();
-      ctx.arc(pts[0].x, pts[0].y, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+    // 无日均的日期断开：填充与描边都按连续有效段分别绘制
+    const segments = [];
+    for (let i = 0; i < pts.length; i++) {
+      if (pts[i].y == null) continue;
+      let j = i;
+      while (j + 1 < pts.length && pts[j + 1].y != null) j++;
+      segments.push(pts.slice(i, j + 1));
+      i = j;
     }
 
     ctx.save();
-    ctx.beginPath();
-    smoothPath(ctx, pts);
-    ctx.lineTo(pts[pts.length - 1].x, bottom);
-    ctx.lineTo(pts[0].x, bottom);
-    ctx.closePath();
     const grad = ctx.createLinearGradient(0, top, 0, bottom);
     grad.addColorStop(0, 'rgba(70,224,168,0.20)');
     grad.addColorStop(1, 'rgba(70,224,168,0.005)');
-    ctx.fillStyle = grad;
-    ctx.fill();
+    for (const seg of segments) {
+      if (seg.length < 2) continue;
+      ctx.beginPath();
+      smoothPath(ctx, seg);
+      ctx.lineTo(seg[seg.length - 1].x, bottom);
+      ctx.lineTo(seg[0].x, bottom);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
     ctx.restore();
 
     ctx.save();
@@ -409,28 +425,49 @@ export class DailyChart {
     ctx.lineWidth = 2.2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.beginPath();
-    smoothPath(ctx, pts);
-    ctx.stroke();
+    for (const seg of segments) {
+      if (seg.length >= 2) {
+        ctx.beginPath();
+        smoothPath(ctx, seg);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.fillStyle = '#46E0A8';
+        ctx.arc(seg[0].x, seg[0].y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.restore();
 
-    if (this.ma.length) {
+    const maPts = this.ma.map((v, i) => ({
+      x: geom.xFor(i),
+      y: v == null ? null : geom.yFor(v),
+    }));
+    const maSegments = [];
+    for (let i = 0; i < maPts.length; i++) {
+      if (maPts[i].y == null) continue;
+      let j = i;
+      while (j + 1 < maPts.length && maPts[j + 1].y != null) j++;
+      maSegments.push(maPts.slice(i, j + 1));
+      i = j;
+    }
+
+    if (maSegments.length) {
       ctx.save();
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = 'rgba(255,255,255,0.34)';
       ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      this.ma.forEach((v, i) => {
-        const x = geom.xFor(i);
-        const y = geom.yFor(v);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      for (const seg of maSegments) {
+        if (seg.length < 2) continue;
+        ctx.beginPath();
+        smoothPath(ctx, seg);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
-    if (this.selected >= 0 && this.selected < entries.length) {
+    if (this.selected >= 0 && this.selected < entries.length
+        && entries[this.selected].avg != null) {
       const x = geom.xFor(this.selected);
       ctx.save();
       ctx.setLineDash([3, 3]);
@@ -546,19 +583,20 @@ function roundRect(ctx, x, y, width, height, radius) {
 /* ---------------- 迷你趋势 ---------------- */
 
 export function drawSparkline(container, entries) {
-  if (!entries.length) {
+  const list = entries.filter((e) => e.avg != null);
+  if (list.length < 2) {
     container.innerHTML = '<div class="empty-state" style="padding:18px">还没有足够的数据</div>';
     return;
   }
   const w = 300;
   const h = 64;
   const pad = 6;
-  const values = entries.map((e) => e.avg);
+  const values = list.map((e) => e.avg);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const pts = entries.map((e, i) => ({
-    x: entries.length === 1 ? w / 2 : pad + ((w - pad * 2) * i) / (entries.length - 1),
+  const pts = list.map((e, i) => ({
+    x: list.length === 1 ? w / 2 : pad + ((w - pad * 2) * i) / (list.length - 1),
     y: pad + (h - pad * 2) * (1 - (e.avg - min) / range),
   }));
   let d = '';
@@ -636,6 +674,7 @@ export function renderHeatmap(container, month, entries, today) {
   let min = Infinity;
   let max = -Infinity;
   for (const e of inMonth) {
+    if (e.avg == null) continue;
     min = Math.min(min, e.avg);
     max = Math.max(max, e.avg);
   }
@@ -648,6 +687,10 @@ export function renderHeatmap(container, month, entries, today) {
     const entry = inMonth.find((e) => e.date === iso);
     if (!entry) {
       cells += `<div class="heat-day empty${iso === today ? ' today' : ''}">${day}</div>`;
+      continue;
+    }
+    if (entry.avg == null) {
+      cells += `<div class="heat-day has-data no-avg${iso === today ? ' today' : ''}" style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.75)">${day}</div>`;
       continue;
     }
     const t = range < 0.05 ? 0.5 : (entry.avg - min) / range;

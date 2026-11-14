@@ -1,6 +1,8 @@
 export const SLOTS = ['早餐前', '早餐后', '午餐前', '午餐后', '晚餐前', '晚餐后', '睡前'];
 export const SLOT_COLORS = ['#46E0A8', '#7BC8FF', '#FFD27A', '#FFA26B', '#C6A8FF', '#FF8FA3', '#B4F36F'];
 export const SLOT_COUNT = 7;
+/** 参与日均计算的时段：早餐前、午餐前、晚餐前、睡前（餐后不参与）。 */
+export const DAILY_AVG_SLOTS = new Set([0, 2, 4, 6]);
 
 const RECORDS_KEY = 'weightdiary.records.v2';
 const PREFS_KEY = 'weightdiary.prefs.v2';

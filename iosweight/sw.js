@@ -1,4 +1,4 @@
-const CACHE = 'weightdiary-v1.4.2';
+const CACHE = 'weightdiary-v1.6.0';
 
 const ASSETS = [
   './',

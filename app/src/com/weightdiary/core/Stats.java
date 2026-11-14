@@ -14,23 +14,28 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 统计与分析引擎：以「每日均值」为核心，同时抽取六时段的平行指标。
+ * 统计与分析引擎：以「日均」为核心（仅取早餐前 / 午餐前 / 晚餐前 / 睡前），
+ * 同时抽取七时段的平行指标。
  */
 public final class Stats {
 
     public static final class DayPoint {
         public final LocalDate date;
+        /** 日均：仅早餐前 / 午餐前 / 晚餐前 / 睡前；该日无这些记录时为 NaN。 */
         public final double avg;
         public final double min;
         public final double max;
         public final int count;
+        /** 参与日均计算的记录条数。 */
+        public final int avgCount;
 
-        DayPoint(LocalDate date, double avg, double min, double max, int count) {
+        DayPoint(LocalDate date, double avg, double min, double max, int count, int avgCount) {
             this.date = date;
             this.avg = avg;
             this.min = min;
             this.max = max;
             this.count = count;
+            this.avgCount = avgCount;
         }
     }
 
@@ -145,31 +150,38 @@ public final class Stats {
         this.recordCount = records.size();
         this.hasData = recordCount > 0;
 
-        // 按日期聚合
+        // 按日期聚合（日均只取早餐前 / 午餐前 / 晚餐前 / 睡前）
         List<DayPoint> dayPoints = new ArrayList<>();
         LocalDate curDate = null;
-        double sum = 0.0;
+        double avgSum = 0.0;
+        int avgCnt = 0;
         int cnt = 0;
         double lo = Double.MAX_VALUE;
         double hi = -Double.MAX_VALUE;
         for (Record r : records) {
             if (curDate == null || !r.date.equals(curDate)) {
                 if (curDate != null) {
-                    dayPoints.add(new DayPoint(curDate, sum / cnt, lo, hi, cnt));
+                    dayPoints.add(new DayPoint(curDate,
+                            avgCnt > 0 ? avgSum / avgCnt : Double.NaN, lo, hi, cnt, avgCnt));
                 }
                 curDate = r.date;
-                sum = 0.0;
+                avgSum = 0.0;
+                avgCnt = 0;
                 cnt = 0;
                 lo = Double.MAX_VALUE;
                 hi = -Double.MAX_VALUE;
             }
-            sum += r.weight;
             cnt++;
+            if (Slots.countsInDailyAvg(r.slot)) {
+                avgSum += r.weight;
+                avgCnt++;
+            }
             lo = Math.min(lo, r.weight);
             hi = Math.max(hi, r.weight);
         }
         if (curDate != null) {
-            dayPoints.add(new DayPoint(curDate, sum / cnt, lo, hi, cnt));
+            dayPoints.add(new DayPoint(curDate,
+                    avgCnt > 0 ? avgSum / avgCnt : Double.NaN, lo, hi, cnt, avgCnt));
         }
         this.days = Collections.unmodifiableList(dayPoints);
         this.dayCount = dayPoints.size();
@@ -180,12 +192,18 @@ public final class Stats {
         int latestCnt = 0;
         LocalDate latestDt = today;
         if (!dayPoints.isEmpty()) {
-            DayPoint last = dayPoints.get(dayPoints.size() - 1);
-            latestVal = last.avg;
-            latestMinVal = last.min;
-            latestMaxVal = last.max;
-            latestCnt = last.count;
-            latestDt = last.date;
+            latestDt = dayPoints.get(dayPoints.size() - 1).date;
+            for (int i = dayPoints.size() - 1; i >= 0; i--) {
+                DayPoint p = dayPoints.get(i);
+                if (!Double.isNaN(p.avg)) {
+                    latestVal = p.avg;
+                    latestMinVal = p.min;
+                    latestMaxVal = p.max;
+                    latestCnt = p.count;
+                    latestDt = p.date;
+                    break;
+                }
+            }
         }
         this.latestAvg = latestVal;
         this.latestMin = latestMinVal;
@@ -193,31 +211,35 @@ public final class Stats {
         this.latestCount = latestCnt;
         this.latestDay = latestDt;
 
-        // 今天
+        // 今天（日均只取饭前与睡前）
         int tCnt = 0;
-        double tSum = 0.0;
+        int tAvgCnt = 0;
+        double tAvgSum = 0.0;
         double tLo = Double.MAX_VALUE;
         double tHi = -Double.MAX_VALUE;
         for (Record r : records) {
             if (r.date.equals(today)) {
                 tCnt++;
-                tSum += r.weight;
+                if (Slots.countsInDailyAvg(r.slot)) {
+                    tAvgSum += r.weight;
+                    tAvgCnt++;
+                }
                 tLo = Math.min(tLo, r.weight);
                 tHi = Math.max(tHi, r.weight);
             }
         }
         this.todayCount = tCnt;
-        this.todayAvg = tCnt > 0 ? tSum / tCnt : Double.NaN;
+        this.todayAvg = tAvgCnt > 0 ? tAvgSum / tAvgCnt : Double.NaN;
         this.todayMin = tCnt > 0 ? tLo : Double.NaN;
         this.todayMax = tCnt > 0 ? tHi : Double.NaN;
         this.todayRange = tCnt >= 2 ? tHi - tLo : Double.NaN;
 
-        // 今天之前最近的一天
+        // 今天之前最近一个「有日均」的一天
         LocalDate previousDate = null;
         double previousAvg = Double.NaN;
         for (int i = dayPoints.size() - 1; i >= 0; i--) {
             DayPoint p = dayPoints.get(i);
-            if (p.date.isBefore(today)) {
+            if (p.date.isBefore(today) && !Double.isNaN(p.avg)) {
                 previousDate = p.date;
                 previousAvg = p.avg;
                 break;
@@ -234,32 +256,38 @@ public final class Stats {
         double stdDays = Double.NaN;
         double medianDays = Double.NaN;
         if (!dayPoints.isEmpty()) {
-            first = dayPoints.get(0).avg;
-            total = latestVal - first;
-            minDay = Double.MAX_VALUE;
-            maxDay = -Double.MAX_VALUE;
-            double acc = 0.0;
             List<Double> avgs = new ArrayList<>(dayPoints.size());
             for (DayPoint p : dayPoints) {
-                minDay = Math.min(minDay, p.avg);
-                maxDay = Math.max(maxDay, p.avg);
-                acc += p.avg;
-                avgs.add(p.avg);
-            }
-            meanDays = acc / dayPoints.size();
-            Collections.sort(avgs);
-            int n = avgs.size();
-            medianDays = (n % 2 == 1) ? avgs.get(n / 2)
-                    : (avgs.get(n / 2 - 1) + avgs.get(n / 2)) / 2.0;
-            if (n >= 2) {
-                double var = 0.0;
-                for (double v : avgs) {
-                    double d = v - meanDays;
-                    var += d * d;
+                if (!Double.isNaN(p.avg)) {
+                    avgs.add(p.avg);
                 }
-                stdDays = Math.sqrt(var / (n - 1));
-            } else {
-                stdDays = 0.0;
+            }
+            if (!avgs.isEmpty()) {
+                first = avgs.get(0);
+                total = Double.isNaN(latestVal) ? Double.NaN : latestVal - first;
+                minDay = Double.MAX_VALUE;
+                maxDay = -Double.MAX_VALUE;
+                double acc = 0.0;
+                for (double v : avgs) {
+                    minDay = Math.min(minDay, v);
+                    maxDay = Math.max(maxDay, v);
+                    acc += v;
+                }
+                meanDays = acc / avgs.size();
+                Collections.sort(avgs);
+                int n = avgs.size();
+                medianDays = (n % 2 == 1) ? avgs.get(n / 2)
+                        : (avgs.get(n / 2 - 1) + avgs.get(n / 2)) / 2.0;
+                if (n >= 2) {
+                    double var = 0.0;
+                    for (double v : avgs) {
+                        double d = v - meanDays;
+                        var += d * d;
+                    }
+                    stdDays = Math.sqrt(var / (n - 1));
+                } else {
+                    stdDays = 0.0;
+                }
             }
         }
         this.firstAvg = first;
@@ -314,12 +342,17 @@ public final class Stats {
         // 日均线性回归（近 30 天，样本不足用全部）
         List<DayPoint> window = new ArrayList<>();
         for (DayPoint p : dayPoints) {
-            if (!p.date.isBefore(from30) && !p.date.isAfter(today)) {
+            if (!Double.isNaN(p.avg) && !p.date.isBefore(from30) && !p.date.isAfter(today)) {
                 window.add(p);
             }
         }
         if (window.size() < 3) {
-            window = dayPoints;
+            window = new ArrayList<>();
+            for (DayPoint p : dayPoints) {
+                if (!Double.isNaN(p.avg)) {
+                    window.add(p);
+                }
+            }
         }
         double slope = Double.NaN;
         double rsq = Double.NaN;
@@ -401,6 +434,9 @@ public final class Stats {
         for (int i = 1; i < recentDays.size(); i++) {
             DayPoint a = recentDays.get(i - 1);
             DayPoint b = recentDays.get(i);
+            if (Double.isNaN(a.avg) || Double.isNaN(b.avg)) {
+                continue;
+            }
             if (b.date.toEpochDay() - a.date.toEpochDay() == 1) {
                 diffs.add(b.avg - a.avg);
             }
@@ -506,14 +542,14 @@ public final class Stats {
         this.heightCm = heightCm;
 
         double bmiVal = Double.NaN;
-        if (hasData && heightCm > 0) {
+        if (hasData && heightCm > 0 && !Double.isNaN(latestVal)) {
             double h = heightCm / 100.0;
             bmiVal = latestVal / (h * h);
         }
         this.bmi = bmiVal;
 
         double progress = Double.NaN;
-        if (hasData && target > 0) {
+        if (hasData && target > 0 && !Double.isNaN(first) && !Double.isNaN(latestVal)) {
             if (Math.abs(first - target) < 0.05) {
                 progress = latestVal <= target ? 1.0 : 0.0;
             } else if (first > target) {
@@ -526,7 +562,8 @@ public final class Stats {
         this.goalProgress = progress;
 
         LocalDate predict = null;
-        if (hasData && target > 0 && !Double.isNaN(slope) && Math.abs(slope) > 0.002) {
+        if (hasData && target > 0 && !Double.isNaN(latestVal)
+                && !Double.isNaN(slope) && Math.abs(slope) > 0.002) {
             double toTargetDays = (target - latestVal) / slope;
             if (toTargetDays > 0 && toTargetDays < 3650) {
                 predict = latestDt.plusDays((long) Math.ceil(toTargetDays));
@@ -545,7 +582,7 @@ public final class Stats {
         double sum = 0.0;
         int n = 0;
         for (DayPoint p : days) {
-            if (!p.date.isBefore(from) && !p.date.isAfter(to)) {
+            if (!Double.isNaN(p.avg) && !p.date.isBefore(from) && !p.date.isAfter(to)) {
                 sum += p.avg;
                 n++;
             }
@@ -570,7 +607,7 @@ public final class Stats {
     }
 
     public double remainingToTarget() {
-        if (target <= 0 || !hasData) {
+        if (target <= 0 || !hasData || Double.isNaN(latestAvg)) {
             return Double.NaN;
         }
         return latestAvg - target;
@@ -579,7 +616,7 @@ public final class Stats {
     public List<String> insights() {
         List<String> out = new ArrayList<>();
         if (!hasData) {
-            out.add("记录第一组体重（早餐前），日均、平行曲线与分析会自动生成。");
+            out.add("记录早餐前 / 午餐前 / 晚餐前 / 睡前的体重，日均、平行曲线与分析会自动生成。");
             return out;
         }
         if (!Double.isNaN(weekDelta)) {

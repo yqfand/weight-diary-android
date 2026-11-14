@@ -214,10 +214,23 @@ public class TrendPage extends Page {
         tvChartTitle.setText(slotsMode ? "七次对比" : "日均曲线");
         tvChartHint.setText(slotsMode ? "点击图例筛选" : "平滑曲线 · 7日均线");
 
+        // 日均曲线：按天连续铺开；没有饭前 / 睡前记录的日期留空，图上断点处理
         List<Record> daily = new ArrayList<>();
-        for (Stats.DayPoint p : st.days) {
-            if (!p.date.isBefore(from) && !p.date.isAfter(today)) {
-                daily.add(new Record(p.date, p.avg));
+        int dayIndex = 0;
+        for (LocalDate d = from; !d.isAfter(today); d = d.plusDays(1)) {
+            while (dayIndex < st.days.size() && st.days.get(dayIndex).date.isBefore(d)) {
+                dayIndex++;
+            }
+            double avg = Double.NaN;
+            if (dayIndex < st.days.size() && st.days.get(dayIndex).date.equals(d)) {
+                avg = st.days.get(dayIndex).avg;
+            }
+            daily.add(new Record(d, avg));
+        }
+        int avgDays = 0;
+        for (Record r : daily) {
+            if (!Double.isNaN(r.weight)) {
+                avgDays++;
             }
         }
 
@@ -230,16 +243,16 @@ public class TrendPage extends Page {
                     : filtered.size() + " 条记录 · " + Slots.COUNT + " 时段 · " + window);
         } else {
             chartDaily.setData(daily, st.target, true);
-            String window = daily.isEmpty() ? "—"
+            String window = avgDays == 0 ? "—"
                     : Fmt.md(from) + " – " + Fmt.md(today);
-            tvTrendSub.setText(daily.isEmpty()
-                    ? "这段时间还没有记录"
-                    : daily.size() + " 天日均 · " + window);
+            tvTrendSub.setText(avgDays == 0
+                    ? "这段时间还没有饭前 / 睡前记录"
+                    : avgDays + " 天日均 · " + window);
         }
 
         chartWeekly.setWeeks(st.weeks);
 
-        if (daily.isEmpty()) {
+        if (avgDays == 0) {
             tvTrendMin.setText("—");
             tvTrendAvg.setText("—");
             tvTrendMax.setText("—");
@@ -249,12 +262,15 @@ public class TrendPage extends Page {
         double max = -Double.MAX_VALUE;
         double sum = 0.0;
         for (Record r : daily) {
+            if (Double.isNaN(r.weight)) {
+                continue;
+            }
             min = Math.min(min, r.weight);
             max = Math.max(max, r.weight);
             sum += r.weight;
         }
         tvTrendMin.setText(Fmt.kg(min));
-        tvTrendAvg.setText(Fmt.kg(sum / daily.size()));
+        tvTrendAvg.setText(Fmt.kg(sum / avgDays));
         tvTrendMax.setText(Fmt.kg(max));
     }
 }

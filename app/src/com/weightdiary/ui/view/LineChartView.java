@@ -44,7 +44,6 @@ public class LineChartView extends View {
 
     private final Path linePath = new Path();
     private final Path areaPath = new Path();
-    private final Path maPath = new Path();
     private final RectF plot = new RectF();
     private final RectF tipRect = new RectF();
 
@@ -164,9 +163,19 @@ public class LineChartView extends View {
 
         double min = Double.MAX_VALUE;
         double max = -Double.MAX_VALUE;
+        int validCount = 0;
         for (Record r : data) {
+            if (Double.isNaN(r.weight)) {
+                continue;
+            }
+            validCount++;
             min = Math.min(min, r.weight);
             max = Math.max(max, r.weight);
+        }
+        if (validCount == 0) {
+            hintPaint.setColor(Color.parseColor("#4DFFFFFF"));
+            canvas.drawText("暂无日均数据", getWidth() / 2f, getHeight() / 2f, hintPaint);
+            return;
         }
         double rawSpan = Math.max(0.1, max - min);
         boolean drawTarget = showTarget
@@ -200,11 +209,14 @@ public class LineChartView extends View {
         for (int i = 0; i < n; i++) {
             Record r = data.get(i);
             xs[i] = plot.left + (r.date.toEpochDay() - first) / (float) daySpan * plot.width();
-            ys[i] = plot.top + (float) ((max - r.weight) / span * plot.height());
+            ys[i] = Double.isNaN(r.weight) ? Float.NaN
+                    : plot.top + (float) ((max - r.weight) / span * plot.height());
         }
         if (n == 1) {
             xs[0] = plot.centerX();
-            ys[0] = plot.centerY();
+            if (!Float.isNaN(ys[0])) {
+                ys[0] = plot.centerY();
+            }
         }
 
         drawGrid(canvas);
@@ -212,32 +224,34 @@ public class LineChartView extends View {
             drawTargetLine(canvas, min, max);
         }
 
-        linePath.reset();
-        areaPath.reset();
-        if (n >= 2) {
-            ChartUtils.smoothPath(linePath, xs, ys);
-            areaPath.set(linePath);
-            areaPath.lineTo(xs[n - 1], plot.bottom);
-            areaPath.lineTo(xs[0], plot.bottom);
-            areaPath.close();
-        }
-
-        maPath.reset();
-        if (n >= 5) {
-            float[] mx = new float[n];
-            float[] my = new float[n];
+        float[] mx = null;
+        float[] my = null;
+        boolean drawMa = false;
+        if (validCount >= 5 && n >= 5) {
+            mx = new float[n];
+            my = new float[n];
+            int maValid = 0;
             for (int i = 0; i < n; i++) {
                 int from = Math.max(0, i - 3);
                 int to = Math.min(n - 1, i + 3);
                 double sum = 0.0;
+                int c = 0;
                 for (int j = from; j <= to; j++) {
-                    sum += data.get(j).weight;
+                    double w = data.get(j).weight;
+                    if (!Double.isNaN(w)) {
+                        sum += w;
+                        c++;
+                    }
                 }
-                double avg = sum / (to - from + 1);
                 mx[i] = xs[i];
-                my[i] = plot.top + (float) ((max - avg) / span * plot.height());
+                if (c > 0) {
+                    my[i] = plot.top + (float) ((max - sum / c) / span * plot.height());
+                    maValid++;
+                } else {
+                    my[i] = Float.NaN;
+                }
             }
-            ChartUtils.smoothPath(maPath, mx, my);
+            drawMa = maValid >= 2;
         }
 
         float revealX = plot.left + plot.width() * reveal;
@@ -248,12 +262,11 @@ public class LineChartView extends View {
             areaPaint.setShader(new LinearGradient(0f, plot.top, 0f, plot.bottom,
                     new int[]{Color.parseColor("#3D46E0A8"), Color.parseColor("#0046E0A8")},
                     null, Shader.TileMode.CLAMP));
-            canvas.drawPath(areaPath, areaPaint);
-            canvas.drawPath(linePath, linePaint);
-            if (n >= 5) {
-                canvas.drawPath(maPath, maPaint);
+            drawSegmented(canvas, xs, ys, linePaint, true);
+            if (drawMa) {
+                drawSegmented(canvas, mx, my, maPaint, false);
             }
-        } else if (n == 1) {
+        } else if (n == 1 && !Float.isNaN(ys[0])) {
             canvas.drawCircle(xs[0], ys[0], dp(3f), dotPaint);
         }
 
@@ -261,8 +274,47 @@ public class LineChartView extends View {
 
         drawXLabels(canvas, n);
 
-        if (touched >= 0 && touched < n) {
+        if (touched >= 0 && touched < n && !Float.isNaN(ys[touched])) {
             drawTooltip(canvas, touched);
+        }
+    }
+
+    /**
+     * 按连续有效点分段绘制；NaN 处断开，不做跨缺口连线。
+     */
+    private void drawSegmented(Canvas canvas, float[] px, float[] py, Paint paint, boolean fillArea) {
+        int n = px.length;
+        int i = 0;
+        while (i < n) {
+            if (Float.isNaN(py[i])) {
+                i++;
+                continue;
+            }
+            int j = i;
+            while (j + 1 < n && !Float.isNaN(py[j + 1])) {
+                j++;
+            }
+            int len = j - i + 1;
+            if (len >= 2) {
+                float[] sx = new float[len];
+                float[] sy = new float[len];
+                System.arraycopy(px, i, sx, 0, len);
+                System.arraycopy(py, i, sy, 0, len);
+                linePath.reset();
+                ChartUtils.smoothPath(linePath, sx, sy);
+                if (fillArea) {
+                    areaPath.reset();
+                    areaPath.set(linePath);
+                    areaPath.lineTo(sx[len - 1], plot.bottom);
+                    areaPath.lineTo(sx[0], plot.bottom);
+                    areaPath.close();
+                    canvas.drawPath(areaPath, areaPaint);
+                }
+                canvas.drawPath(linePath, paint);
+            } else {
+                canvas.drawCircle(px[i], py[i], dp(3f), dotPaint);
+            }
+            i = j + 1;
         }
     }
 
@@ -354,6 +406,9 @@ public class LineChartView extends View {
         int nearest = -1;
         float best = Float.MAX_VALUE;
         for (int i = 0; i < xs.length; i++) {
+            if (Float.isNaN(ys[i])) {
+                continue;
+            }
             float d = Math.abs(xs[i] - x);
             if (d < best) {
                 best = d;
